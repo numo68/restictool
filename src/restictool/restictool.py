@@ -1,9 +1,10 @@
+"""
+Fetch the arguments and run the selected functionality
+"""
 from .parse_arguments import parse
-
-import docker
-import yaml
 
 
 def run():
+    """Run the tool"""
     args = parse()
     print(args)

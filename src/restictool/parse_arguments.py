@@ -1,3 +1,7 @@
+"""
+Parses the arguments for the restictool
+"""
+
 import argparse
 from os import environ, path
 
@@ -23,6 +27,10 @@ with the backup commands are /volume/VOLNAME for docker volumes and
 
 
 def parse():
+    """Parses the restictool arguments
+
+    Returns: a tuple of the restictol arguments as a dict and the restic ones as a list
+    """
     parser = argparse.ArgumentParser(
         prog="restictool",
         formatter_class=argparse.RawDescriptionHelpFormatter,
@@ -36,20 +44,20 @@ def parse():
         default=DEFAULT_CONFIGURATION_FILE,
         metavar="FILE",
         type=argparse.FileType("r"),
-        help=f"the configuration file (default: %(default)s)",
+        help="the configuration file (default: %(default)s)",
     )
     parser.add_argument(
         "-t",
         "--cache",
         default=DEFAULT_CACHE_DIR,
         metavar="DIR",
-        help=f"the cache directory (default: %(default)s)",
+        help="the cache directory (default: %(default)s)",
     )
     parser.add_argument(
         "-i",
         "--image",
         default=DEFAULT_IMAGE,
-        help=f"the docker restic image name (default: to %(default)s)",
+        help="the docker restic image name (default: to %(default)s)",
     )
     parser.add_argument("-q", "--quiet", action="store_true", help="remain quiet")
 
@@ -81,6 +89,12 @@ def parse():
         help="directory to restore to (mandatory). The directory will be created if needed",
     )
 
-    parser_run = subparsers.add_parser("run", help="run the restic tool")
+    subparsers.add_parser("run", help="run the restic tool")
 
-    return parser.parse_known_args()
+    args = parser.parse_known_args();
+    restic_args = args[1];
+
+    if len(restic_args) > 0 and restic_args[0] == '--':
+        restic_args.pop(0)
+
+    return (vars(args[0]), restic_args)
