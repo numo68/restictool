@@ -91,10 +91,10 @@ def parse():
 
     subparsers.add_parser("run", help="run the restic tool")
 
-    args = parser.parse_known_args();
-    restic_args = args[1];
+    args = parser.parse_known_args()
+    restic_args = args[1]
 
-    if len(restic_args) > 0 and restic_args[0] == '--':
+    if len(restic_args) > 0 and restic_args[0] == "--":
         restic_args.pop(0)
 
     return (vars(args[0]), restic_args)
