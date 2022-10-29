@@ -1,1 +1,0 @@
-**restictool** is a Pyhton wrapper to the dockerized [restic](https://restic.net) backup tool.
