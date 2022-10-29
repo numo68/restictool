@@ -1,7 +1,7 @@
 """Test argument parsing"""
 
-import pytest
 import os
+import pytest
 from pyfakefs import fake_filesystem_unittest
 from restictool.argument_parser import Arguments
 

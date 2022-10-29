@@ -2,11 +2,12 @@
 Fetch the arguments and run the selected functionality
 """
 from .argument_parser import Arguments
+from .configuration_parser import Configuration
 
 
 def run():
     """Run the tool"""
     parser = Arguments()
     parser.parse(None)
-    print(parser.tool_arguments)
-    print(parser.restic_arguments)
+    config = Configuration()
+    config.load("repository:\n  name: a\n  password: \'aaa\'")

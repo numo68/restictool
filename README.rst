@@ -99,6 +99,8 @@ Repository configuration
         extra:
             RESTIC_PACK_SIZE: "64"
 
+``name`` and ``password`` are mandatory. All other fields are optional.
+
 ``password`` specifies the ``restic`` repository password. Fetching
 the repository name or password from a file or command is not
 supported.
