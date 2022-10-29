@@ -13,7 +13,7 @@ a snapshot to a local directory and to run arbitrary restic commands.
     restictool [TOOL_ARGS...] COMMAND [COMMAND_ARGS...] [--] [...]
 
 The rest of the arguments is passed to the restic command. In case the
-such argument is a one recognized by the ``restictool`` as well,
+such argument is a one recognized by the command as well,
 use ``--`` as a separator.
 
 As seen from the ``restic`` the snapshots created with the backup commands are

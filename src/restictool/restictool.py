@@ -1,10 +1,12 @@
 """
 Fetch the arguments and run the selected functionality
 """
-from .parse_arguments import parse
+from .argument_parser import Arguments
 
 
 def run():
     """Run the tool"""
-    args = parse()
-    print(args)
+    parser = Arguments()
+    parser.parse(None)
+    print(parser.tool_arguments)
+    print(parser.restic_arguments)
