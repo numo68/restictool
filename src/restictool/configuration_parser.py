@@ -4,6 +4,7 @@ Parses the configuration for the restictool
 
 import io
 import sys
+from schema import Schema, And, Use, Optional, SchemaError
 from yaml import safe_load
 
 
@@ -11,6 +12,24 @@ class Configuration:
     """
     Parses the configuration
     """
+
+    REPOSITORY_SCHEMA = Schema(
+        {
+            'name': And(str, lambda s: len(s) > 0),
+            'password': And(str, lambda s: len(s) > 0),
+            Optional('host'): And(str, lambda s: len(s) > 0),
+            Optional('authentication'): And({str: str}),
+            Optional('extra'): And({str: str}),
+        },
+    )
+
+    SCHEMA = Schema(
+        {
+            'repository': And(REPOSITORY_SCHEMA),
+            Optional(object) : object  # Note: remove when the schema is finished
+        },
+        ignore_extra_keys=True         # Note: remove when the schema is finished
+    )
 
     def __init__(self):
         self.configuration = None
@@ -22,33 +41,9 @@ class Configuration:
             stream (IOBase): configuration file opened as stream
             close (bool): close the stream after reading
         """
-        self.configuration = safe_load(stream)
+        config = safe_load(stream)
 
         if isinstance(stream, io.IOBase) and close:
             stream.close()
 
-        self.validate()
-
-    def validate(self):
-        """Validates the parsed configuration"""
-        assert self.configuration is not None, "Load configuration before validating"
-
-        if "repository" not in self.configuration or not isinstance(
-            self.configuration["repository"], dict
-        ):
-            sys.exit("'repository' entry is missing or empty in the configuration")
-
-        repo = self.configuration["repository"]
-        if "name" not in repo or not isinstance(repo["name"], str) or not repo["name"]:
-            sys.exit(
-                "'repository.name' entry is missing, empty or not a string in the configuration"
-            )
-
-        if (
-            "password" not in repo
-            or not isinstance(repo["password"], str)
-            or not repo["password"]
-        ):
-            sys.exit(
-                "'repository.password' entry is missing, empty or not a string in the configuration"
-            )
+        self.configuration = self.SCHEMA.validate(config)

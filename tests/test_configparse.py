@@ -5,6 +5,7 @@ import pytest
 import unittest
 
 from restictool.configuration_parser import Configuration
+from schema import SchemaError, SchemaMissingKeyError
 
 
 class TestArgumentParser(unittest.TestCase):
@@ -120,19 +121,21 @@ repository:
   name: "s3:https://somewhere:8010/restic-backups"
   password: "MySecretPassword"
 """)
-        with pytest.raises(SystemExit, match="'repository' entry is missing"):
+        with pytest.raises(SchemaError, match="repository"):
             self.config.load("foo:\n")
 
-        with pytest.raises(SystemExit, match="'repository' entry is missing"):
+        with pytest.raises(SchemaError, match="repository"):
             self.config.load("repository:\n")
 
-        with pytest.raises(SystemExit, match="'repository.name' entry is missing"):
+        with pytest.raises(SchemaError, match="name"):
             self.config.load("repository:\n  name:\n")
-        with pytest.raises(SystemExit, match="'repository.name' entry is missing"):
+        with pytest.raises(SchemaError, match="name"):
             self.config.load("repository:\n  name: [1,2]\n")
-        with pytest.raises(SystemExit, match="'repository.name' entry is missing"):
+        with pytest.raises(SchemaError, match="name"):
             self.config.load("repository:\n  name: \"\"\n")
-        with pytest.raises(SystemExit, match="'repository.password' entry is missing"):
+        with pytest.raises(SchemaError, match="password"):
             self.config.load("repository:\n  name: foo\n")
-        with pytest.raises(SystemExit, match="'repository.password' entry is missing"):
+        with pytest.raises(SchemaError, match="password"):
             self.config.load("repository:\n  name: foo\n  password: ''")
+        with pytest.raises(SchemaError):
+            self.config.load("repository:\n  name: \"aa\"\n")
