@@ -4,7 +4,8 @@ Usage
 **restictool** is a Pyhton wrapper to the dockerized `restic <https://restic.net>`_ backup tool.
 
 The tool allows to backup docker volumes and local directories, to restore
-a snapshot to a local directory and to run arbitrary restic commands.
+a snapshot to a local directory, to run arbitrary restic commands and
+just to check the configuration file.
 
  ::
 
@@ -52,7 +53,7 @@ Common arguments
    be verbose. Repeat for increasing verbosity level
 
 ``COMMAND``
-   one of ``backup``, ``restore`` or ``run``
+   one of ``backup``, ``restore``, ``run`` or ``check``
 
 Backup arguments
 ----------------
@@ -90,7 +91,7 @@ Repository configuration
 .. code-block:: yaml
 
     repository:
-        name: "s3:https://somewhere:8010/restic-backups"
+        location: "s3:https://somewhere:8010/restic-backups"
         password: "MySecretPassword"
         host: myhost
         authentication:
@@ -99,10 +100,10 @@ Repository configuration
         extra:
             RESTIC_PACK_SIZE: "64"
 
-``name`` and ``password`` are mandatory. All other fields are optional.
+``location`` and ``password`` are mandatory. All other fields are optional.
 
 ``password`` specifies the ``restic`` repository password. Fetching
-the repository name or password from a file or command is not
+the repository location or password from a file or command is not
 supported.
 
 ``host`` defaults to the hostname of the machine the ``restictool`` is
@@ -115,8 +116,8 @@ other variables such as ``RESTIC_COMPRESSION``. This is only an
 logical division and both sets of variables will be merged.
 
 The variable names will be converted to uppercase and the values passed 1:1.
-Some variables cannot be defined and will be silently ignored (for example
-``RESTIC_CACHE_DIR`` or ``RESTIC_PASSWORD``).
+Some variables cannot be defined (for example ``RESTIC_CACHE_DIR`` or
+``RESTIC_PASSWORD``).
 
 Command-line options for restic
 -------------------------------

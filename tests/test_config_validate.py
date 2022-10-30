@@ -17,7 +17,7 @@ class TestArgumentParser(unittest.TestCase):
             yaml.safe_load(
                 """
 repository:
-  name: "s3:https://somewhere:8010/restic-backups"
+  location: "s3:https://somewhere:8010/restic-backups"
   password: "MySecretPassword"
   host: myhost
   authentication:
@@ -48,7 +48,7 @@ localdirs:
         )
 
         self.assertEqual(
-            config["repository"]["name"],
+            config["repository"]["location"],
             "s3:https://somewhere:8010/restic-backups",
         )
         self.assertEqual(
@@ -106,7 +106,7 @@ localdirs:
             yaml.safe_load(
                 """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 """
             )
@@ -117,7 +117,7 @@ repository:
             yaml.safe_load(
                 """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 spurious:
     - ''
@@ -131,32 +131,36 @@ spurious:
         with pytest.raises(SchemaError, match="repository"):
             validate(yaml.safe_load("repository:\n"))
 
-        with pytest.raises(SchemaError, match="name"):
-            validate(yaml.safe_load("repository:\n  name:\n"))
+        with pytest.raises(SchemaError, match="location"):
+            validate(yaml.safe_load("repository:\n  location:\n"))
 
-        with pytest.raises(SchemaError, match="name"):
-            validate(yaml.safe_load("repository:\n  name: [1,2]\n"))
+        with pytest.raises(SchemaError, match="location"):
+            validate(yaml.safe_load("repository:\n  location: [1,2]\n"))
 
-        with pytest.raises(SchemaError, match="name"):
-            validate(yaml.safe_load('repository:\n  name: ""\n'))
-
-        with pytest.raises(SchemaError, match="password"):
-            validate(yaml.safe_load("repository:\n  name: foo\n"))
+        with pytest.raises(SchemaError, match="location"):
+            validate(yaml.safe_load('repository:\n  location: ""\n'))
 
         with pytest.raises(SchemaError, match="password"):
-            validate(yaml.safe_load("repository:\n  name: foo\n  password: ''"))
+            validate(yaml.safe_load("repository:\n  location: foo\n"))
+
+        with pytest.raises(SchemaError, match="password"):
+            validate(yaml.safe_load("repository:\n  location: foo\n  password: ''"))
 
         with pytest.raises(SchemaError):
-            validate(yaml.safe_load('repository:\n  name: "aa"\n'))
+            validate(yaml.safe_load('repository:\n  location: "aa"\n'))
 
         with pytest.raises(SchemaError, match="host"):
             validate(
-                yaml.safe_load("repository:\n  name: foo\n  password: pass\n  host:")
+                yaml.safe_load(
+                    "repository:\n  location: foo\n  password: pass\n  host:"
+                )
             )
 
         with pytest.raises(SchemaError, match="host"):
             validate(
-                yaml.safe_load("repository:\n  name: foo\n  password: pass\n  host: ''")
+                yaml.safe_load(
+                    "repository:\n  location: foo\n  password: pass\n  host: ''"
+                )
             )
 
     def test_validate_options(self):
@@ -167,7 +171,7 @@ spurious:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
 """
@@ -179,7 +183,7 @@ options:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     common:
@@ -192,7 +196,7 @@ options:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     common:
@@ -206,7 +210,7 @@ options:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     volume:
@@ -220,7 +224,7 @@ options:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     localdir:
@@ -237,7 +241,7 @@ options:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
 """
@@ -249,7 +253,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - foo
@@ -262,7 +266,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: ''
@@ -274,7 +278,7 @@ volumes:
             yaml.safe_load(
                 """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: '*'
@@ -287,7 +291,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: vol
@@ -301,7 +305,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: vol
@@ -315,7 +319,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - options:
@@ -332,7 +336,7 @@ volumes:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
 """
@@ -344,7 +348,7 @@ localdirs:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - foo
@@ -357,7 +361,7 @@ localdirs:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: ''
@@ -371,7 +375,7 @@ localdirs:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: tag
@@ -384,7 +388,7 @@ localdirs:
             yaml.safe_load(
                 """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: tag
@@ -398,7 +402,7 @@ localdirs:
                 yaml.safe_load(
                     """
 repository:
-    name: "s3:https://somewhere:8010/restic-backups"
+    location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: tag

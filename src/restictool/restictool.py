@@ -11,5 +11,5 @@ def run():
     parser.parse(None)
     config = Configuration()
     config.load(
-        "repository:\n  name: a\n  password: 'aaa'\n  host: aa\n  authentication:\n    aaa: bbb\n  extra:\n    sss: ccc\n"
+        "repository:\n  location: a\n  password: 'aaa'\n  host: aa\n  authentication:\n    aaa: bbb\n  extra:\n    sss: ccc\n"
     )

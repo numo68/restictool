@@ -4,7 +4,7 @@ from schema import Schema, And, Optional
 
 REPOSITORY_SCHEMA = Schema(
     {
-        "name": And(str, lambda s: len(s) > 0),
+        "location": And(str, lambda s: len(s) > 0),
         "password": And(str, lambda s: len(s) > 0),
         Optional("host"): And(str, lambda s: len(s) > 0),
         Optional("authentication"): {str: str},

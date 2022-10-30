@@ -89,6 +89,15 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
         self.assertEqual(self.parser.tool_arguments["verbose"], 2)
 
+        self.parser.parse(
+            [
+                "--config",
+                alt_config,
+                "check",
+            ]
+        )
+        self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
+
     def test_extra(self):
         """Test extra arguments"""
         self.parser.parse(
