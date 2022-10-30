@@ -34,7 +34,7 @@ class Configuration:
         and this attribute is True
     localdirs_to_backup : list
         list of the explicitly specified local directories to backup.
-        Items are the (name,path) tuples
+        Items are the (name, path) tuples
 
     Methods
     -------

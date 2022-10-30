@@ -26,6 +26,9 @@ repository:
 options:
   common:
     - --insecure-tls
+  forget:
+    - --keep-daily
+    - 7
   volume:
     - --volume-opt
   localdir:
@@ -38,9 +41,11 @@ volumes:
       - "--exclude-caches"
 localdirs:
   - name: my_tag
-    path: path
+    path: /path
     options:
       - '--exclude="/localdir/my_tag/some_dir"'
+  - name: my_home
+    path: '~'
 """
         self.default_configuration_dir = os.path.join(
             os.environ["HOME"],
@@ -86,3 +91,155 @@ localdirs:
         tool.setup(["restore", "-r", restore_dir])
         tool.create_directories()
         self.assertTrue(os.path.exists(restore_dir))
+
+    def test_run_mount(self):
+        """Test docker mounts for run"""
+        tool = ResticTool()
+        tool.setup(["run"])
+        mounts = tool.get_docker_mounts()
+        self.assertEqual(
+            mounts, {self.default_cache_dir: {"bind": "/cache", "mode": "rw"}}
+        )
+
+    def test_backup_mount_volume(self):
+        """Test docker mounts for volume backup"""
+        tool = ResticTool()
+        tool.setup(["backup"])
+        mounts = tool.get_docker_mounts(volume="my_volume")
+        self.assertEqual(
+            mounts,
+            {
+                self.default_cache_dir: {"bind": "/cache", "mode": "rw"},
+                "my_volume": {"bind": "/volume/my_volume", "mode": "rw"},
+            },
+        )
+
+    def test_backup_mount_localdir(self):
+        """Test docker mounts for localdir backup"""
+        tool = ResticTool()
+        tool.setup(["backup"])
+        mounts = tool.get_docker_mounts(localdir=("my_tag", "/path"))
+        self.assertEqual(
+            mounts,
+            {
+                self.default_cache_dir: {"bind": "/cache", "mode": "rw"},
+                "/path": {"bind": "/localdir/my_tag", "mode": "rw"},
+            },
+        )
+
+    def test_restore_mount(self):
+        """Test docker mounts for restore"""
+        tool = ResticTool()
+        tool.setup(["restore", "-r", "/tmp/restore/target"])
+        mounts = tool.get_docker_mounts()
+        self.assertEqual(
+            mounts,
+            {
+                self.default_cache_dir: {"bind": "/cache", "mode": "rw"},
+                "/tmp/restore/target": {"bind": "/target", "mode": "rw"},
+            },
+        )
+
+    def test_backup_options_volume(self):
+        """Test docker options for volume backup"""
+        tool = ResticTool()
+        tool.setup(["-q", "backup", "-p"])
+        options = tool.get_restic_arguments(volume="my_volume")
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--quiet",
+                "--host",
+                "myhost",
+                "--insecure-tls",
+                "--volume-opt",
+                "--exclude=\"/volume/my_volume/some_dir\"",
+                "--exclude-caches",
+                "backup",
+                "/volume/my_volume",
+            ]
+        )
+
+    def test_backup_options_localdir(self):
+        """Test docker options for volume backup"""
+        tool = ResticTool()
+        tool.setup(["-q", "backup", "-p"])
+        options = tool.get_restic_arguments(localdir="my_tag")
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--quiet",
+                "--host",
+                "myhost",
+                "--insecure-tls",
+                "--localdir-opt1",
+                "--localdir-opt2",
+                "--exclude=\"/localdir/my_tag/some_dir\"",
+                "backup",
+                "/localdir/my_tag",
+            ]
+        )
+
+    def test_backup_options_forget(self):
+        """Test docker options for volume backup"""
+        tool = ResticTool()
+        tool.setup(["-q", "backup", "-p", "--my-arg1", "--my-arg2"])
+        options = tool.get_restic_arguments(forget=True)
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--quiet",
+                "--host",
+                "myhost",
+                "--insecure-tls",
+                "--keep-daily",
+                "7",
+                "--prune",
+                "forget",
+                "--my-arg1",
+                "--my-arg2",
+            ]
+        )
+
+    def test_restore_options(self):
+        """Test docker options for restore"""
+        tool = ResticTool()
+        tool.setup(["restore", "-r", "/restore/to", "my_snapshot", "--my-arg1", "--my-arg2"])
+        options = tool.get_restic_arguments(forget=True)
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--insecure-tls",
+                "--target",
+                "/restore/to",
+                "restore",
+                "my_snapshot",
+                "--my-arg1",
+                "--my-arg2",
+            ]
+        )
+
+    def test_run_options(self):
+        """Test docker options for general run"""
+        tool = ResticTool()
+        tool.setup(["run", "snapshots", "--host", "myhost"])
+        options = tool.get_restic_arguments(forget=True)
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--insecure-tls",
+                "snapshots",
+                "--host",
+                "myhost",
+            ]
+        )

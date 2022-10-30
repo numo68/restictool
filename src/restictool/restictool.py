@@ -131,24 +131,78 @@ class ResticTool:
                 )
                 sys.exit(2)
 
-    def get_docker_volume_mounts(self, volume: str = None, localdir: str = None):
+    def get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
         """
         Get the dict that can be used as ``volumes`` argument to run()
         """
+        mounts = {}
+
+        mounts[self.arguments.tool_arguments["cache"]] = {
+            "bind": "/cache",
+            "mode": "rw",
+        }
+
+        if self.arguments.tool_arguments["subcommand"] == "backup":
+            if volume:
+                mounts[volume] = {
+                    "bind": "/volume/" + volume,
+                    "mode": "rw",
+                }
+
+            if localdir:
+                mounts[localdir[1]] = {
+                    "bind": "/localdir/" + localdir[0],
+                    "mode": "rw",
+                }
+
+        if self.arguments.tool_arguments["subcommand"] == "restore":
+            mounts[self.arguments.tool_arguments["restore"]] = {
+                "bind": "/target",
+                "mode": "rw",
+            }
+
+        return mounts
 
     def get_restic_arguments(
         self, volume: str = None, localdir: str = None, forget: bool = False
-    ):
+    ) -> list:
         """
         Get the restic arguments for the specified command and eventually
         volume or local directory
         """
+        options = ["--cache-dir", "/cache"]
+        if self.arguments.tool_arguments["quiet"]:
+            options.append("--quiet")
+
         if self.arguments.tool_arguments["subcommand"] == "run":
-            pass
+            options.extend(self.configuration.get_options())
         elif self.arguments.tool_arguments["subcommand"] == "backup":
-            pass
+            options.extend(["--host", self.configuration.hostname])
+            options.extend(self.configuration.get_options(volume, localdir, forget))
+            if forget:
+                if self.arguments.tool_arguments["prune"]:
+                    options.append("--prune")
+                options.append("forget")
+            else:
+                assert volume or localdir
+                options.append("backup")
+                if volume:
+                    options.append(f"/volume/{volume}")
+                else:
+                    options.append(f"/localdir/{localdir}")
+
         elif self.arguments.tool_arguments["subcommand"] == "restore":
-            pass
+            options.extend(self.configuration.get_options())
+            options.extend(["--target", self.arguments.tool_arguments["restore"]])
+            options.append("restore")
+
+        if self.arguments.restic_arguments:
+            options.extend(self.arguments.restic_arguments)
+
+        return options
+
+    def run_docker(self, command: list, volumes: dict):
+        """Execute docker with the configured options"""
 
 
 def run():

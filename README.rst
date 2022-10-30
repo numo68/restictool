@@ -50,7 +50,9 @@ Common arguments
    be quiet
 
 ``-v``
-   be verbose. Repeat for increasing verbosity level
+   be verbose. Repeat for increasing verbosity level. This only applies
+   to the tool itself to filter log output, verbosity for the restic itself
+   has to be specified through its own arguments.
 
 ``COMMAND``
    one of ``backup``, ``restore``, ``run`` or ``check``
@@ -58,7 +60,7 @@ Common arguments
 Backup arguments
 ----------------
 
-``-p``
+``-p``, ``--prune``
    prune after backup. This can be costly on cloud storage
    charging for API calls and downloads
 
@@ -111,7 +113,7 @@ the repository location or password from a file or command is not
 supported.
 
 ``host`` defaults to the hostname of the machine the ``restictool`` is
-executed on.
+executed on. It only applies to ``backup``.
 
 ``authentication`` contains ``restic`` environment variables used to
 authenticate against the target repository. Typical ones are
