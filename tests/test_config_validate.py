@@ -8,7 +8,7 @@ from schema import SchemaError
 from restictool.configuration_validator import validate
 
 
-class TestArgumentParser(unittest.TestCase):
+class TestConfigValidator(unittest.TestCase):
     """Test configuration validation"""
 
     def test_validate_complete(self):

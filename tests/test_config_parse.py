@@ -8,7 +8,7 @@ import pytest
 from restictool.configuration_parser import Configuration
 
 
-class TestArgumentParser(unittest.TestCase):
+class TestConfigParser(unittest.TestCase):
     """Test argument parsing"""
 
     def setUp(self):

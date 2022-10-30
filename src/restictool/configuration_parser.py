@@ -119,7 +119,7 @@ class Configuration:
         self.localdirs_to_backup = []
         if "localdirs" in self.configuration:
             for ldir in self.configuration["localdirs"]:
-                self.localdirs_to_backup.append((ldir["name"],ldir["path"]))
+                self.localdirs_to_backup.append((ldir["name"], ldir["path"]))
 
     def create_env_vars(self) -> None:
         """Parse and set the environment variables"""

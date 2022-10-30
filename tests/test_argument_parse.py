@@ -50,6 +50,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.parser.tool_arguments["verbose"], 0)
         self.assertEqual(self.parser.tool_arguments["subcommand"], "run")
         self.assertEqual(len(self.parser.restic_arguments), 0)
+        self.assertEqual(self.parser.get_verbosity_level(), 1)
 
     def test_common(self):
         """Test setting of common arguments"""
@@ -77,6 +78,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.parser.tool_arguments["image"], alt_image)
         self.assertTrue(self.parser.tool_arguments["force_pull"])
         self.assertTrue(self.parser.tool_arguments["quiet"])
+        self.assertEqual(self.parser.get_verbosity_level(), 0)
 
         self.parser.parse(
             [
@@ -88,6 +90,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         )
         self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
         self.assertEqual(self.parser.tool_arguments["verbose"], 2)
+        self.assertEqual(self.parser.get_verbosity_level(), 3)
 
         self.parser.parse(
             [

@@ -111,3 +111,9 @@ class Arguments:
 
         self.tool_arguments = vars(parsed_args[0])
         self.restic_arguments = restic_args
+
+    def get_verbosity_level(self):
+        """Get the verbosity level as 0 for quiet, 1 for default and +1 for each -v"""
+        if self.tool_arguments["quiet"]:
+            return 0
+        return 1 + self.tool_arguments["verbose"]

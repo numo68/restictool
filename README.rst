@@ -23,8 +23,8 @@ specified ones. This needs to be considered when specifying inclusion
 or exclusion filters for both backup and restore.
 
 The container running ``restic`` gets a ``restictool.local`` added to the hosts
-pointing to the host in the default bridge network. You can use this
-for tunneled setups.
+pointing to the gateway of the first config in the default bridge network. You
+can use this for tunneled setups.
 
 
 Common arguments
