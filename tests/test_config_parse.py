@@ -294,3 +294,33 @@ volumes:
                 "0123456789abcdef0123456789abcdef0123456789abcdefxxx"
             )
         )
+
+    def test_localdirs_to_backup(self):
+        """Test getting the list of local directories to backup"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+"""
+        )
+        self.assertEqual(
+            self.config.localdirs_to_backup,
+            [],
+        )
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+localdirs:
+    - name: dir1
+      path: /path1
+    - name: dir2
+      path: /path2
+"""
+        )
+        self.assertEqual(
+            self.config.localdirs_to_backup, [("dir1", "/path1"), ("dir2", "/path2")]
+        )

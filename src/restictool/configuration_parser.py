@@ -31,6 +31,9 @@ class Configuration:
     backup_all_volumes: bool
         if the list of volumes contains a ``*``, volumes_to_backup is empty
         and this attribute is True
+    localdirs_to_backup : list
+        list of the explicitly specified local directories to backup.
+        Items are the (name,path) tuples
 
     Methods
     -------
@@ -68,6 +71,7 @@ class Configuration:
         self.hostname = None
         self.volumes_to_backup = None
         self.backup_all_volumes = False
+        self.localdirs_to_backup = None
 
     def load(self, stream, close=True) -> None:
         """Loads the stream and does the initial parsing and sanity checking
@@ -111,6 +115,11 @@ class Configuration:
                     self.backup_all_volumes = True
                     break
                 self.volumes_to_backup.append(vol["name"])
+
+        self.localdirs_to_backup = []
+        if "localdirs" in self.configuration:
+            for ldir in self.configuration["localdirs"]:
+                self.localdirs_to_backup.append((ldir["name"],ldir["path"]))
 
     def create_env_vars(self) -> None:
         """Parse and set the environment variables"""
