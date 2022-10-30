@@ -10,4 +10,6 @@ def run():
     parser = Arguments()
     parser.parse(None)
     config = Configuration()
-    config.load("repository:\n  name: a\n  password: 'aaa'\n  host: aa\n  authentication:\n    aaa: bbb\n  extra:\n    sss: ccc\n")
+    config.load(
+        "repository:\n  name: a\n  password: 'aaa'\n  host: aa\n  authentication:\n    aaa: bbb\n  extra:\n    sss: ccc\n"
+    )

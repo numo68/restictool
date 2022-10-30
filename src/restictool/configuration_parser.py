@@ -3,33 +3,16 @@ Parses the configuration for the restictool
 """
 
 import io
-import sys
-from schema import Schema, And, Use, Optional, SchemaError
+from schema import SchemaError
 from yaml import safe_load
+
+from .configuration_validator import validate
 
 
 class Configuration:
     """
     Parses the configuration
     """
-
-    REPOSITORY_SCHEMA = Schema(
-        {
-            'name': And(str, lambda s: len(s) > 0),
-            'password': And(str, lambda s: len(s) > 0),
-            Optional('host'): And(str, lambda s: len(s) > 0),
-            Optional('authentication'): And({str: str}),
-            Optional('extra'): And({str: str}),
-        },
-    )
-
-    SCHEMA = Schema(
-        {
-            'repository': And(REPOSITORY_SCHEMA),
-            Optional(object) : object  # Note: remove when the schema is finished
-        },
-        ignore_extra_keys=True         # Note: remove when the schema is finished
-    )
 
     def __init__(self):
         self.configuration = None
@@ -46,4 +29,7 @@ class Configuration:
         if isinstance(stream, io.IOBase) and close:
             stream.close()
 
-        self.configuration = self.SCHEMA.validate(config)
+        try:
+            self.configuration = validate(config)
+        except SchemaError as ex:
+            raise ValueError("configuration invalid\n" + str(ex.with_traceback(None))) from None
