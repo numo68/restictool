@@ -180,4 +180,7 @@ Local directory backup specification
 ``localdirs`` is a list of the local directories to backup when running
 the  ``backup`` command. ``name`` specifies the tag that will be used
 to distinguish the directories in the repository.  ``options``
-will be used when backing up the specified local directory.
+will be used when backing up the specified local directory. Tildes (``~``)
+at the beginnong of ``path`` will be expanded to the contents
+of the ``HOME`` environment variable.
+

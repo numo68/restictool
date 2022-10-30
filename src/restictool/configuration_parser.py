@@ -5,6 +5,7 @@ Parses the configuration for the restictool
 import io
 import platform
 import re
+import os
 
 from schema import SchemaError
 from yaml import safe_load
@@ -46,7 +47,7 @@ class Configuration:
         returns the list of restic command-line options to use. If volume or localdir
         are specified, the volume/localdir options are appended as well, both general
         and per-volume/localdir
-    
+
     is_volume_backed_up(volume : str) -> bool
         True if the specified volume should be backed up. If there is a ``*`` entry,
         all volumes except anonymous ones (48+ hex characters) match. If there is not,
@@ -100,7 +101,7 @@ class Configuration:
 
         self.create_env_vars()
 
-        if ("host") in self.configuration["repository"]:
+        if "host" in self.configuration["repository"]:
             self.hostname = self.configuration["repository"]["host"]
         else:
             self.hostname = platform.node().lower()
@@ -119,7 +120,12 @@ class Configuration:
         self.localdirs_to_backup = []
         if "localdirs" in self.configuration:
             for ldir in self.configuration["localdirs"]:
-                self.localdirs_to_backup.append((ldir["name"], ldir["path"]))
+                dir_path = (
+                    ldir["path"]
+                    if not ldir["path"].startswith("~")
+                    else ldir["path"].replace("~", os.environ["HOME"], 1)
+                )
+                self.localdirs_to_backup.append((ldir["name"], dir_path))
 
     def create_env_vars(self) -> None:
         """Parse and set the environment variables"""
@@ -137,12 +143,20 @@ class Configuration:
             if key in self.environment_vars:
                 raise ValueError(f"configuration invalid: variable {key} is forbidden")
 
-        self.environment_vars["RESTIC_REPOSITORY"] = self.configuration["repository"]["location"]
-        self.environment_vars["RESTIC_PASSWORD"] = self.configuration["repository"]["password"]
+        self.environment_vars["RESTIC_REPOSITORY"] = self.configuration["repository"][
+            "location"
+        ]
+        self.environment_vars["RESTIC_PASSWORD"] = self.configuration["repository"][
+            "password"
+        ]
 
-    def get_options(self, volume: str = None, localdir: str = None, forget: bool = False) -> list:
-        """Collect the list of the options to be used for rsetic invocation"""
+    def get_options(
+        self, volume: str = None, localdir: str = None, forget: bool = False
+    ) -> list:
+        """Collect the list of the options to be used for restic invocation"""
+
         options = []
+
         if "options" in self.configuration:
             if "common" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["common"])
@@ -154,26 +168,44 @@ class Configuration:
                 options.extend(self.configuration["options"]["localdir"])
 
         if volume:
-            if "volumes" in self.configuration:
+            options.extend(self.get_volume_options(volume))
+
+        if localdir:
+            options.extend(self.get_localdir_options(localdir))
+
+        return options
+
+    def get_volume_options(self, volume: str) -> list:
+        """Collect the list of volume-related options to be used for restic invocation"""
+
+        options = []
+
+        if "volumes" in self.configuration:
+            for vol in self.configuration["volumes"]:
+                if volume == vol["name"]:
+                    if "options" in vol:
+                        options.extend(vol["options"])
+                    break
+            else:
                 for vol in self.configuration["volumes"]:
-                    if volume == vol["name"]:
+                    if vol["name"] == "*":
                         if "options" in vol:
                             options.extend(vol["options"])
                         break
-                else:
-                    for vol in self.configuration["volumes"]:
-                        if vol["name"] == "*":
-                            if "options" in vol:
-                                options.extend(vol["options"])
-                            break
 
-        if localdir:
-            if "localdirs" in self.configuration:
-                for ldir in self.configuration["localdirs"]:
-                    if localdir == ldir["name"]:
-                        if "options" in ldir:
-                            options.extend(ldir["options"])
-                        break
+        return options
+
+    def get_localdir_options(self, localdir: str) -> list:
+        """Collect the list of volume-related options to be used for restic invocation"""
+
+        options = []
+
+        if "localdirs" in self.configuration:
+            for ldir in self.configuration["localdirs"]:
+                if localdir == ldir["name"]:
+                    if "options" in ldir:
+                        options.extend(ldir["options"])
+                    break
 
         return options
 
@@ -181,9 +213,12 @@ class Configuration:
         """Returns whether the volume is to be backed up"""
         if self.backup_all_volumes:
             return not self.ANONYMOUS_VOLUME_REGEX.match(volume)
-        else:
-            return volume in self.volumes_to_backup
+
+        return volume in self.volumes_to_backup
 
     def is_forget_specified(self) -> bool:
         """Returns whether the forget should be run after backing up"""
-        return "options" in self.configuration and "forget" in self.configuration["options"]
+        return (
+            "options" in self.configuration
+            and "forget" in self.configuration["options"]
+        )

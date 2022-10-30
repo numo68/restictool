@@ -47,9 +47,33 @@ class ResticTool:
 
     def run(self):
         """Run the tool"""
-        self.pull_if_needed()
-        self.create_directories()
-        self.find_own_network()
+        if self.arguments.tool_arguments["subcommand"] != "check":
+            self.pull_if_needed()
+            self.create_directories()
+            self.find_own_network()
+
+        if self.arguments.tool_arguments["subcommand"] == "run":
+            self.run_run()
+        elif self.arguments.tool_arguments["subcommand"] == "backup":
+            self.run_backup()
+        elif self.arguments.tool_arguments["subcommand"] == "restore":
+            self.run_restore()
+        elif self.arguments.tool_arguments["subcommand"] == "check":
+            pass
+        else:
+            logging.fatal(
+                "Unknown command %s", self.arguments.tool_arguments["subcommand"]
+            )
+            sys.exit(2)
+
+    def run_run(self):
+        """Run an arbitrary restic command"""
+
+    def run_backup(self):
+        """Run the backup"""
+
+    def run_restore(self):
+        """Run the restore"""
 
     def find_own_network(self):
         """Find own address on the default bridge network"""
@@ -107,17 +131,24 @@ class ResticTool:
                 )
                 sys.exit(2)
 
-    def get_docker_arguments(self, volume: str = None, localdir: str = None):
+    def get_docker_volume_mounts(self, volume: str = None, localdir: str = None):
         """
-        Get the docker arguments for the specified command and eventually
-        volume or local directory
+        Get the dict that can be used as ``volumes`` argument to run()
         """
 
-    def get_restic_arguments(self, volume: str = None, localdir: str = None):
+    def get_restic_arguments(
+        self, volume: str = None, localdir: str = None, forget: bool = False
+    ):
         """
         Get the restic arguments for the specified command and eventually
         volume or local directory
         """
+        if self.arguments.tool_arguments["subcommand"] == "run":
+            pass
+        elif self.arguments.tool_arguments["subcommand"] == "backup":
+            pass
+        elif self.arguments.tool_arguments["subcommand"] == "restore":
+            pass
 
 
 def run():

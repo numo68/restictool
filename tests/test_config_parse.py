@@ -1,6 +1,7 @@
 """Test configuration parsing"""
 
 import io
+import os
 import unittest
 import platform
 import pytest
@@ -66,6 +67,7 @@ localdirs:
         config_stream.close()
 
     def test_validate(self):
+        """Test the validator"""
         self.config.load(
             """
 repository:
@@ -373,3 +375,21 @@ options:
         )
         self.assertTrue(self.config.is_forget_specified())
 
+    def test_localdirs_tilde_expansion(self):
+        """Test getting the list of local directories to backup"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+localdirs:
+  - name: tag1
+    path: foo
+  - name: tag2
+    path: ~/foo
+"""
+        )
+        self.assertEqual(
+            self.config.localdirs_to_backup,
+            [("tag1", "foo"), ("tag2", os.path.join(os.environ["HOME"], "foo"))],
+        )
