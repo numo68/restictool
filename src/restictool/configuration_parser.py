@@ -140,12 +140,14 @@ class Configuration:
         self.environment_vars["RESTIC_REPOSITORY"] = self.configuration["repository"]["location"]
         self.environment_vars["RESTIC_PASSWORD"] = self.configuration["repository"]["password"]
 
-    def get_options(self, volume: str = None, localdir: str = None) -> list:
+    def get_options(self, volume: str = None, localdir: str = None, forget: bool = False) -> list:
         """Collect the list of the options to be used for rsetic invocation"""
         options = []
         if "options" in self.configuration:
             if "common" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["common"])
+            if forget and "forget" in self.configuration["options"]:
+                options.extend(self.configuration["options"]["forget"])
             if volume and "volume" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["volume"])
             if localdir and "localdir" in self.configuration["options"]:
@@ -181,3 +183,7 @@ class Configuration:
             return not self.ANONYMOUS_VOLUME_REGEX.match(volume)
         else:
             return volume in self.volumes_to_backup
+
+    def is_forget_specified(self) -> bool:
+        """Returns whether the forget should be run after backing up"""
+        return "options" in self.configuration and "forget" in self.configuration["options"]

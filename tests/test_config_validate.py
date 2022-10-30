@@ -28,6 +28,13 @@ repository:
 options:
   common:
     - --insecure-tls
+  forget:
+    - --keep-daily
+    - 7
+    - --keep-weekly
+    - 5
+    - --keep-monthly
+    - 12
   volume:
     - --volume-opt
   localdir:
@@ -66,6 +73,10 @@ localdirs:
         self.assertEqual(
             config["options"]["common"][0],
             "--insecure-tls",
+        )
+        self.assertEqual(
+            config["options"]["forget"][0],
+            "--keep-daily",
         )
         self.assertEqual(
             config["options"]["volume"][0],

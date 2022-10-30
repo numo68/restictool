@@ -131,6 +131,8 @@ Command-line options for restic
     options:
         common:
             - "--insecure-tls"
+        forget:
+            - ...
         volume:
             - ...
         localdir:
@@ -140,7 +142,10 @@ This section specifies the command-line options to be used when
 executing the ``restic``. ``common`` ones are used for any run,
 ``volume`` ones are added to common ones when backing up a docker
 volume and ``localdir`` ones when backing up a local directory.
-The ``run`` and ``restore`` commands get just the ``common`` ones.
+If ``forget`` is present a ``restic forget`` is run after the
+backup is completed with these arguments, optionally eith prune
+if specified. The ``run`` and ``restore`` commands get just the
+``common`` ones.
 
 Volume backup specification
 ---------------------------

@@ -1,6 +1,6 @@
 """Validates the configuration schema"""
 
-from schema import Schema, And, Optional
+from schema import Schema, And, Optional, Use
 
 REPOSITORY_SCHEMA = Schema(
     {
@@ -14,16 +14,17 @@ REPOSITORY_SCHEMA = Schema(
 
 OPTIONS_SCHEMA = Schema(
     {
-        Optional("common"): [And(str, lambda s: len(s) > 0)],
-        Optional("volume"): [And(str, lambda s: len(s) > 0)],
-        Optional("localdir"): [And(str, lambda s: len(s) > 0)],
+        Optional("common"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("forget"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("volume"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("localdir"): [And(Use(str), lambda s: len(s) > 0)],
     },
 )
 
 VOLUME_SCHEMA = Schema(
     {
         "name": And(str, lambda s: len(s) > 0),
-        Optional("options"): [And(str, lambda s: len(s) > 0)],
+        Optional("options"): [And(Use(str), lambda s: len(s) > 0)],
     },
 )
 
@@ -31,7 +32,7 @@ LOCALDIR_SCHEMA = Schema(
     {
         "name": And(str, lambda s: len(s) > 0),
         "path": And(str, lambda s: len(s) > 0),
-        Optional("options"): [And(str, lambda s: len(s) > 0)],
+        Optional("options"): [And(Use(str), lambda s: len(s) > 0)],
     },
 )
 

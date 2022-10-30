@@ -25,6 +25,11 @@ repository:
 options:
   common:
     - --insecure-tls
+  forget:
+    - --keep-daily
+    - 7
+    - --keep-weekly
+    - 5
   volume:
     - --volume-opt
   localdir:
@@ -126,6 +131,14 @@ repository:
         """Test parsing of the common options"""
         self.config.load(self.config_yaml)
         self.assertEqual(self.config.get_options(), ["--insecure-tls"])
+
+    def test_options_forget(self):
+        """Test parsing of the forget options"""
+        self.config.load(self.config_yaml)
+        self.assertEqual(
+            self.config.get_options(forget=True),
+            ["--insecure-tls", "--keep-daily", "7", "--keep-weekly", "5"],
+        )
 
     def test_options_volume(self):
         """Test parsing of the volume options"""
@@ -324,3 +337,39 @@ localdirs:
         self.assertEqual(
             self.config.localdirs_to_backup, [("dir1", "/path1"), ("dir2", "/path2")]
         )
+
+    def test_is_forget_specified(self):
+        """Test whether to run the forget pass"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+"""
+        )
+        self.assertFalse(self.config.is_forget_specified())
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  common:
+    - --foo
+"""
+        )
+        self.assertFalse(self.config.is_forget_specified())
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  forget:
+    - --foo
+"""
+        )
+        self.assertTrue(self.config.is_forget_specified())
+
