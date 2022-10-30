@@ -71,6 +71,10 @@ Restore arguments
 The command requires at least the definition of the snapshot to restore
 from. Usually filters will be specified as well.
 
+The direcotry will be created if it does not exist. Note that as
+the restored files are written from inside the docker container they will
+be written from the context of the root user. Watch for mishaps.
+
 Run arguments
 -------------
 
@@ -150,7 +154,7 @@ Volume backup specification
           - "--exclude-caches"
 
 ``volumes`` is a list of the docker volumes to backup when running
-the  ``backup`` command. If the name is ``*``, all non-anonymous
+the  ``backup`` command. If the name is ``'*''``, all non-anonymous
 (not 48+ hex characters) volumes are backed up. ``options``
 will be used when backing up the specified volume. If there is
 both ``*`` and a specific name, the options will come from the

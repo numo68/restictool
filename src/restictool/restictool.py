@@ -3,6 +3,8 @@ Fetch the arguments, parse the configuration and run the selected functionality
 """
 
 import logging
+import os
+import sys
 import docker
 import docker.errors
 
@@ -43,11 +45,11 @@ class ResticTool:
 
         self.client = docker.from_env()
 
-        self.find_own_network()
-
     def run(self):
         """Run the tool"""
-        pass
+        self.pull_if_needed()
+        self.create_directories()
+        self.find_own_network()
 
     def find_own_network(self):
         """Find own address on the default bridge network"""
@@ -56,14 +58,54 @@ class ResticTool:
             self.own_ip_address = bridge.attrs["IPAM"]["Config"][0]["Gateway"]
             logging.info(
                 "Own address on the '%s' network: %s",
-                self.BRIDGE_NETWORK_NAME, self.own_ip_address,
+                self.BRIDGE_NETWORK_NAME,
+                self.own_ip_address,
             )
         except (docker.errors.NotFound, KeyError, TypeError, IndexError):
             logging.warning(
-                "warning: network '%s' not recognized, own address won't be added",
-                self.BRIDGE_NETWORK_NAME
+                "Network '%s' not recognized, own address won't be added",
+                self.BRIDGE_NETWORK_NAME,
             )
             self.own_ip_address = None
+
+    def pull_if_needed(self):
+        """Pull the image if requested"""
+        if self.arguments.tool_arguments["force_pull"]:
+            image = self.arguments.tool_arguments["image"].split(":")
+            logging.info("Pulling image %s", self.arguments.tool_arguments["image"])
+            self.client.images.pull(
+                repository=image[0], tag=image[1] if len(image) > 1 else None
+            )
+
+    def create_directories(self):
+        """Create directories"""
+        if not os.path.exists(self.arguments.tool_arguments["cache"]):
+            logging.info(
+                "Creating cache directory %s", self.arguments.tool_arguments["cache"]
+            )
+            os.makedirs(self.arguments.tool_arguments["cache"], mode=0o755)
+
+        if not os.path.isdir(self.arguments.tool_arguments["cache"]):
+            logging.fatal(
+                "Could not create cache directory %s, exiting",
+                self.arguments.tool_arguments["cache"],
+            )
+            sys.exit(2)
+
+        if self.arguments.tool_arguments["subcommand"] == "restore":
+            if not os.path.exists(self.arguments.tool_arguments["restore"]):
+                logging.info(
+                    "Creating restore directory %s",
+                    self.arguments.tool_arguments["restore"],
+                )
+                os.makedirs(self.arguments.tool_arguments["restore"], mode=0o755)
+
+            if not os.path.isdir(self.arguments.tool_arguments["restore"]):
+                logging.fatal(
+                    "Could not create restore directory %s, exiting",
+                    self.arguments.tool_arguments["restore"],
+                )
+                sys.exit(2)
 
     def get_docker_arguments(self, volume: str = None, localdir: str = None):
         """
