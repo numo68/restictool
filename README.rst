@@ -134,9 +134,9 @@ Command-line options for restic
 
 This section specifies the command-line options to be used when
 executing the ``restic``. ``common`` ones are used for any run,
-``volume`` ones when backing up a docker volume and ``localdir``
-ones when backing up a local directory. The ``run`` and ``restore``
-commands get just the ``common`` ones.
+``volume`` ones are added to common ones when backing up a docker
+volume and ``localdir`` ones when backing up a local directory.
+The ``run`` and ``restore`` commands get just the ``common`` ones.
 
 Volume backup specification
 ---------------------------
@@ -152,7 +152,9 @@ Volume backup specification
 ``volumes`` is a list of the docker volumes to backup when running
 the  ``backup`` command. If the name is ``*``, all non-anonymous
 (not 48+ hex characters) volumes are backed up. ``options``
-will be used when backing up the specified volume.
+will be used when backing up the specified volume. If there is
+both ``*`` and a specific name, the options will come from the
+specific one and if not found, from the wildcard one.
 
 
 Local directory backup specification
