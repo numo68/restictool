@@ -1,5 +1,4 @@
-"""
-Holds the settings for the tool
+"""Holds the settings for the tool
 """
 
 from enum import Enum
@@ -19,8 +18,7 @@ class SubCommand(Enum):
 
 
 class Settings:
-    """
-    Contains settings provided by either the command line or in another way
+    """Contains settings provided by either the command line or in another way
     """
 
     DEFAULT_IMAGE = "restic/restic"

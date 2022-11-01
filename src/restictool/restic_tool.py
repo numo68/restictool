@@ -13,8 +13,7 @@ from .configuration_parser import Configuration
 
 
 class ResticToolException(Exception):
-    """
-    Throw if an error prevents the tool to continue. If invoked from a command
+    """Throw if an error prevents the tool to continue. If invoked from a command
     line exit wit the code provided.
     """
 

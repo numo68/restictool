@@ -92,7 +92,7 @@ Snapshots arguments
 -------------------
 
 Any argument is passed to the ``restic snapshots`` directly.
-`--latest 1` is a common one.
+``--latest 1`` is a common one.
 
 Run arguments
 -------------

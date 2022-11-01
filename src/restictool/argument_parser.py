@@ -7,8 +7,7 @@ from .settings import Settings, SubCommand
 
 
 class Arguments:
-    """
-    Parses the arguments for the restictool
+    """Parses the arguments for the restictool
     """
 
     HELP_EPILOG = """

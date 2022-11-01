@@ -1,5 +1,4 @@
-"""
-Parses the configuration for the restictool
+"""Parses the configuration for the restictool
 """
 
 import io
@@ -14,8 +13,7 @@ from .configuration_validator import validate
 
 
 class Configuration:
-    """
-    Parses the configuration given by a stream
+    """Parses the configuration given by a stream
 
     Attributes
     ----------
