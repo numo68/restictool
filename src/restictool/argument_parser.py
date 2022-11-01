@@ -14,7 +14,7 @@ class Arguments:
     DEFAULT_CONFIGURATION_FILE = path.join(
         environ["HOME"], ".config", "restictool", "restictool.yml"
     )
-    DEFAULT_CACHE_DIR = path.join(environ["HOME"], ".cache", ".restic")
+    DEFAULT_CACHE_DIR = path.join(environ["HOME"], ".cache", "restic")
     DEFAULT_IMAGE = "restic/restic"
     HELP_EPILOG = """
     Use %(prog)s {backup,restore,run} --help to get the subcommand
@@ -73,6 +73,12 @@ class Arguments:
             choices=["critical", "error", "warning", "info", "debug"],
             default="warning",
             help="set the logging level (default: %(default)s)",
+        )
+
+        parser.add_argument(
+            "-q", "--quiet",
+            action="store_true",
+            help="silence output from the restic",
         )
 
         subparsers = parser.add_subparsers(

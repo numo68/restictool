@@ -40,7 +40,7 @@ Common arguments
    the configuration file (default: ``~/.config/restic/restictool.yml``)
 
 ``--cache DIR``
-   the cache directory (default: ``~/.cache/.restic``)
+   the cache directory (default: ``~/.cache/restic``)
 
 ``--image IMAGE``
    the docker restic image name (default: ``restic/restic``)
@@ -52,8 +52,11 @@ Common arguments
    log level for the tool (``critical``, ``error``, ``warning``,
    ``info``, ``debug``, default: ``warning``). This applies to the tool itself;
    messages from the restic are written to the standard output directly
-   and are controlled by arguments such as ``-q`` or ``-v`` passed
-   to the restic command.
+   and can be silenced by ``-q`` passed to either for this tool or
+   the restic command
+
+``-q``, ``-quiet``
+   Pass the ``-q`` option to the restic command
 
 ``COMMAND``
    one of ``backup``, ``restore``, ``run``, ``exists`` or ``check``

@@ -56,7 +56,7 @@ localdirs:
             self.default_configuration_dir, "restictool.yml"
         )
         self.default_cache_base = os.path.join(os.environ["HOME"], ".cache")
-        self.default_cache_dir = os.path.join(self.default_cache_base, ".restic")
+        self.default_cache_dir = os.path.join(self.default_cache_base, "restic")
 
         self.setUpPyfakefs()
         os.makedirs(self.default_configuration_dir)
@@ -150,12 +150,12 @@ localdirs:
             [
                 "--cache-dir",
                 "/cache",
-                "--host",
-                "myhost",
                 "--insecure-tls",
                 "--volume-opt",
                 '--exclude="/volume/my_volume/some_dir"',
                 "--exclude-caches",
+                "--host",
+                "myhost",
                 "backup",
                 "/volume/my_volume",
                 "-q",
@@ -166,25 +166,25 @@ localdirs:
         """Test docker options for volume backup"""
         tool = ResticTool()
         tool.setup(["backup", "-p"])
-        options = tool.get_restic_arguments(localdir="my_tag")
+        options = tool.get_restic_arguments(localdir_name="my_tag")
         self.assertEqual(
             options,
             [
                 "--cache-dir",
                 "/cache",
-                "--host",
-                "myhost",
                 "--insecure-tls",
                 "--localdir-opt1",
                 "--localdir-opt2",
                 '--exclude="/localdir/my_tag/some_dir"',
+                "--host",
+                "myhost",
                 "backup",
                 "/localdir/my_tag",
             ],
         )
 
     def test_backup_options_forget(self):
-        """Test docker options for volume backup"""
+        """Test docker options for forget"""
         tool = ResticTool()
         tool.setup(["backup", "-p", "--my-arg1", "--my-arg2"])
         options = tool.get_restic_arguments(forget=True)
@@ -193,13 +193,29 @@ localdirs:
             [
                 "--cache-dir",
                 "/cache",
-                "--host",
-                "myhost",
                 "--insecure-tls",
                 "--keep-daily",
                 "7",
-                "--prune",
+                "--host",
+                "myhost",
                 "forget",
+                "--my-arg1",
+                "--my-arg2",
+            ],
+        )
+
+    def test_backup_options_prune(self):
+        """Test docker options for prune"""
+        tool = ResticTool()
+        tool.setup(["backup", "-p", "--my-arg1", "--my-arg2"])
+        options = tool.get_restic_arguments(prune=True)
+        self.assertEqual(
+            options,
+            [
+                "--cache-dir",
+                "/cache",
+                "--insecure-tls",
+                "prune",
                 "--my-arg1",
                 "--my-arg2",
             ],

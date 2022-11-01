@@ -18,7 +18,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.default_configuration_file = os.path.join(
             self.default_configuration_dir, "restictool.yml"
         )
-        self.default_cache_dir = os.path.join(os.environ["HOME"], ".cache", ".restic")
+        self.default_cache_dir = os.path.join(os.environ["HOME"], ".cache", "restic")
         self.default_image = "restic/restic"
 
         self.parser = Arguments()
@@ -66,7 +66,6 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 "--image",
                 alt_image,
                 "--force-pull",
-                "-q",
                 "run",
             ]
         )
@@ -75,6 +74,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertEqual(self.parser.tool_arguments["image"], alt_image)
         self.assertTrue(self.parser.tool_arguments["force_pull"])
         self.assertEqual(self.parser.tool_arguments["log_level"], "warning")
+        self.assertFalse(self.parser.tool_arguments["quiet"])
 
         self.parser.parse(
             [
@@ -82,12 +82,13 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 alt_config,
                 "--log-level",
                 "error",
-                "-vv",
+                "-q",
                 "run",
             ]
         )
         self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
         self.assertEqual(self.parser.tool_arguments["log_level"], "error")
+        self.assertTrue(self.parser.tool_arguments["quiet"])
 
         self.parser.parse(
             [

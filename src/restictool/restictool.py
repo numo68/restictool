@@ -86,6 +86,67 @@ class ResticTool:
 
     def run_backup(self) -> int:
         """Run the backup"""
+        backed_up = False
+        exit_code = 0
+
+        volumes = [
+            x.name
+            for x in self.client.volumes.list()
+            if self.configuration.is_volume_backed_up(x.name)
+        ]
+
+        volumes.sort()
+
+        for volume in volumes:
+            logging.info("Backing up volume '%s'", volume)
+            backed_up = True
+
+            code = self.run_docker(
+                command=self.get_restic_arguments(volume=volume),
+                env=self.configuration.environment_vars,
+                volumes=self.get_docker_mounts(volume=volume),
+            )
+
+            if code > exit_code:
+                exit_code = code
+
+        for local_dir in self.configuration.localdirs_to_backup:
+            logging.info("Backing up local directory '%s'", local_dir[1])
+            backed_up = True
+
+            code = self.run_docker(
+                command=self.get_restic_arguments(localdir_name=local_dir[0]),
+                env=self.configuration.environment_vars,
+                volumes=self.get_docker_mounts(localdir=local_dir),
+            )
+
+            if code > exit_code:
+                exit_code = code
+
+        if backed_up:
+            if self.configuration.is_forget_specified():
+                logging.info("Forgetting expired backups")
+
+                code = self.run_docker(
+                    command=self.get_restic_arguments(forget=True),
+                    env=self.configuration.environment_vars,
+                    volumes=self.get_docker_mounts(),
+                )
+
+                if self.arguments.tool_arguments["prune"]:
+                    logging.info("Pruning the repository")
+
+                    code = self.run_docker(
+                        command=self.get_restic_arguments(prune=True),
+                        env=self.configuration.environment_vars,
+                        volumes=self.get_docker_mounts(),
+                    )
+
+                if code > exit_code:
+                    exit_code = code
+        else:
+            logging.warning("Nothing to back up")
+
         return 0
 
     def run_restore(self) -> int:
@@ -203,7 +264,11 @@ class ResticTool:
         return mounts
 
     def get_restic_arguments(
-        self, volume: str = None, localdir: str = None, forget: bool = False
+        self,
+        volume: str = None,
+        localdir_name: str = None,
+        forget: bool = False,
+        prune: bool = False,
     ) -> list:
         """
         Get the restic arguments for the specified command and eventually
@@ -217,19 +282,21 @@ class ResticTool:
             options.extend(self.configuration.get_options())
             options.extend(["cat", "config"])
         elif self.arguments.tool_arguments["subcommand"] == "backup":
-            options.extend(["--host", self.configuration.hostname])
-            options.extend(self.configuration.get_options(volume, localdir, forget))
+            options.extend(self.configuration.get_options(volume, localdir_name, forget))
+            if not prune:
+                options.extend(["--host", self.configuration.hostname])
+
             if forget:
-                if self.arguments.tool_arguments["prune"]:
-                    options.append("--prune")
                 options.append("forget")
+            elif prune:
+                options.append("prune")
             else:
-                assert volume or localdir
+                assert volume or localdir_name
                 options.append("backup")
                 if volume:
                     options.append(f"/volume/{volume}")
                 else:
-                    options.append(f"/localdir/{localdir}")
+                    options.append(f"/localdir/{localdir_name}")
 
         elif self.arguments.tool_arguments["subcommand"] == "restore":
             options.extend(self.configuration.get_options())
@@ -239,10 +306,20 @@ class ResticTool:
         if self.arguments.restic_arguments:
             options.extend(self.arguments.restic_arguments)
 
+        if self.arguments.tool_arguments["quiet"]:
+            options.append("-q")
+
         return options
 
     def run_docker(self, command: list, env: dict, volumes: dict, quiet=False) -> int:
         """Execute docker with the configured options"""
+
+        logging.debug(
+            "Running docker\ncommand: %s\nenvironment: %s\nmounts: %s",
+            command,
+            env,
+            volumes,
+        )
 
         container = self.client.containers.run(
             image=self.arguments.tool_arguments["image"],
