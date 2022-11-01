@@ -10,7 +10,6 @@ import docker.errors
 
 from restictool.settings import Settings, SubCommand
 
-from .argument_parser import Arguments
 from .configuration_parser import Configuration
 
 
@@ -353,13 +352,3 @@ class ResticTool:
         container.remove()
 
         return exit_code["StatusCode"]
-
-
-def run():
-    """Run the tool"""
-    arguments = Arguments()
-    arguments.parse()
-
-    tool = ResticTool(arguments.to_settings())
-    tool.setup()
-    tool.run()

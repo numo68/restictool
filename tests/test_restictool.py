@@ -5,7 +5,7 @@ import shutil
 from pyfakefs import fake_filesystem_unittest
 
 from restictool.argument_parser import Arguments
-from restictool.restictool import ResticTool
+from restictool.restic_tool import ResticTool
 from restictool.settings import Settings
 
 
