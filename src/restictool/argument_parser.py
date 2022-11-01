@@ -104,7 +104,15 @@ class Arguments:
             metavar="DIR",
             help="directory to restore to (mandatory). The directory will be created if needed",
         )
+        parser_restore.add_argument(
+            "snapshot",
+            metavar="SNAPSHOT",
+            nargs="?",
+            default="latest",
+            help="snapshot to restore from (default: %(default)s)",
+        )
 
+        subparsers.add_parser("snapshots", help="list the snapshots in the repository")
         subparsers.add_parser("run", help="run the restic tool")
         subparsers.add_parser("exists", help="check whether the repository exists")
         subparsers.add_parser("check", help="check the configuration file")
@@ -133,6 +141,7 @@ class Arguments:
             settings.prune = self.tool_arguments["prune"]
         if "restore" in self.tool_arguments:
             settings.restore_directory = self.tool_arguments["restore"]
+            settings.restore_snapshot = self.tool_arguments["snapshot"]
         settings.restic_arguments = self.restic_arguments
 
         return settings

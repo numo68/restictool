@@ -12,9 +12,10 @@ class SubCommand(Enum):
     NOTSET = 0
     BACKUP = 1
     RESTORE = 2
-    RUN = 3
-    EXISTS = 4
-    CHECK = 5
+    SNAPSHOTS = 3
+    RUN = 4
+    EXISTS = 5
+    CHECK = 6
 
 
 class Settings:
@@ -37,5 +38,6 @@ class Settings:
         self.log_level = "WARNING"
         self.prune = False
         self.quiet = False
+        self.restore_snapshot = None
         self.restore_directory = None
         self.restic_arguments = []

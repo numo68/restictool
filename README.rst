@@ -22,7 +22,10 @@ getting weird errors.
 As seen from the ``restic`` the snapshots created with the backup commands are
 ``/volume/VOLNAME`` for docker volumes and ``/localdir/TAG`` for locally
 specified ones. This needs to be considered when specifying inclusion
-or exclusion filters for both backup and restore.
+or exclusion filters for both backup and restore. If for example
+``/a/b`` is being backed up as ``my_dir``, the original
+file ``a/b/c/d`` is seen as ``/localdir/my_dir/c/d``.
+
 
 The container running ``restic`` gets a ``restictool.local`` added to the hosts
 pointing to the gateway of the first config in the default bridge network. You
@@ -59,7 +62,8 @@ Common arguments
    Pass the ``-q`` option to the restic command
 
 ``COMMAND``
-   one of ``backup``, ``restore``, ``run``, ``exists`` or ``check``
+   one of ``backup``, ``restore``, ``snapshots``, ``run``, ``exists`` or 
+   ``check``
 
 Backup arguments
 ----------------
@@ -73,13 +77,22 @@ Restore arguments
 
 ``-r DIR``, ``--restore DIR``
    directory to restore to. This argument is mandatory.
+``SNAPSHOT``
+   snapshot to restore from
 
-The command requires at least the definition of the snapshot to restore
-from. Usually filters will be specified as well.
+The snapshot to restore from is taken from the next argument; if not present
+it defaults to ``latest``. A common way to restore is ``--path /localdir/my_name``
+finding the latest snapshot containing the specified local directory.
 
-The direcotry will be created if it does not exist. Note that as
+The directory will be created if it does not exist. Note that as
 the restored files are written from inside the docker container they will
 be written from the context of the root user. Watch for mishaps.
+
+Snapshots arguments
+-------------------
+
+Any argument is passed to the ``restic snapshots`` directly.
+`--latest 1` is a common one.
 
 Run arguments
 -------------
@@ -190,6 +203,6 @@ Local directory backup specification
 the  ``backup`` command. ``name`` specifies the tag that will be used
 to distinguish the directories in the repository.  ``options``
 will be used when backing up the specified local directory. Tildes (``~``)
-at the beginnong of ``path`` will be expanded to the contents
+at the beginning of ``path`` will be expanded to the contents
 of the ``HOME`` environment variable.
 

@@ -123,11 +123,13 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         )
         self.assertEqual(self.parser.tool_arguments["subcommand"], "restore")
         self.assertEqual(self.parser.tool_arguments["restore"], "bar")
+        self.assertEqual(self.parser.tool_arguments["snapshot"], "latest")
         self.assertEqual(self.parser.restic_arguments, [])
 
         self.parser.parse(
             [
                 "restore",
+                "oldone",
                 "-r",
                 "foo",
                 "--",
@@ -137,6 +139,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         )
         self.assertEqual(self.parser.tool_arguments["subcommand"], "restore")
         self.assertEqual(self.parser.tool_arguments["restore"], "foo")
+        self.assertEqual(self.parser.tool_arguments["snapshot"], "oldone")
         self.assertEqual(self.parser.restic_arguments, ["-r", "bar"])
 
     def test_exceptions(self):
@@ -193,6 +196,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertFalse(settings.prune)
         self.assertTrue(settings.quiet)
         self.assertEqual(settings.restore_directory, "/tmp/restore")
+        self.assertEqual(settings.restore_snapshot, "latest")
 
         self.parser.parse(["backup", "-p"])
         settings = self.parser.to_settings()

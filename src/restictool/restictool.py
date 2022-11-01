@@ -53,11 +53,13 @@ class ResticTool:
             self.find_own_network()
 
         if self.settings.subcommand == SubCommand.RUN:
-            exit_code = self.run_run()
+            exit_code = self.run_general()
         elif self.settings.subcommand == SubCommand.BACKUP:
             exit_code = self.run_backup()
         elif self.settings.subcommand == SubCommand.RESTORE:
             exit_code = self.run_restore()
+        elif self.settings.subcommand == SubCommand.SNAPSHOTS:
+            exit_code = self.run_general()
         elif self.settings.subcommand == SubCommand.EXISTS:
             exit_code = self.run_exists()
         elif self.settings.subcommand == SubCommand.CHECK:
@@ -71,7 +73,7 @@ class ResticTool:
                 logging.error("restic exited with code %d", exit_code)
             sys.exit(exit_code)
 
-    def run_run(self) -> int:
+    def run_general(self) -> int:
         """Run an arbitrary restic command"""
         exit_code = self.run_docker(
             command=self.get_restic_arguments(),
@@ -148,7 +150,19 @@ class ResticTool:
 
     def run_restore(self) -> int:
         """Run the restore"""
-        return 0
+        exit_code = self.run_docker(
+            command=self.get_restic_arguments(),
+            env=self.configuration.environment_vars,
+            volumes=self.get_docker_mounts(),
+        )
+
+        if exit_code == 0:
+            logging.info(
+                "Restore to %s successful",
+                self.settings.restore_directory,
+            )
+
+        return exit_code
 
     def run_exists(self) -> int:
         """Run an arbitrary restic command"""
@@ -271,15 +285,12 @@ class ResticTool:
         if self.settings.subcommand == SubCommand.RUN:
             options.extend(self.configuration.get_options())
         elif self.settings.subcommand == SubCommand.EXISTS:
-            options.extend(self.configuration.get_options())
             options.extend(["cat", "config"])
+            options.extend(self.configuration.get_options())
+        elif self.settings.subcommand == SubCommand.SNAPSHOTS:
+            options.append("snapshots")
+            options.extend(self.configuration.get_options())
         elif self.settings.subcommand == SubCommand.BACKUP:
-            options.extend(
-                self.configuration.get_options(volume, localdir_name, forget)
-            )
-            if not prune:
-                options.extend(["--host", self.configuration.hostname])
-
             if forget:
                 options.append("forget")
             elif prune:
@@ -292,10 +303,17 @@ class ResticTool:
                 else:
                     options.append(f"/localdir/{localdir_name}")
 
+            options.extend(
+                self.configuration.get_options(volume, localdir_name, forget)
+            )
+
+            if not prune:
+                options.extend(["--host", self.configuration.hostname])
+
         elif self.settings.subcommand == SubCommand.RESTORE:
+            options.extend(["restore", self.settings.restore_snapshot])
+            options.extend(["--target", "/target"])
             options.extend(self.configuration.get_options())
-            options.extend(["--target", self.settings.restore_directory])
-            options.append("restore")
 
         if self.settings.restic_arguments:
             options.extend(self.settings.restic_arguments)
@@ -318,7 +336,6 @@ class ResticTool:
         container = self.client.containers.run(
             image=self.settings.image,
             command=command,
-            remove=True,
             environment=env,
             extra_hosts={"restictool.local": self.own_ip_address}
             if self.own_ip_address
@@ -332,6 +349,8 @@ class ResticTool:
                 print(log.decode("utf-8").rstrip())
 
         exit_code = container.wait()
+
+        container.remove()
 
         return exit_code["StatusCode"]
 
