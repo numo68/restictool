@@ -3,7 +3,7 @@ Parses the arguments for the restictool
 """
 
 import argparse
-from os import environ, path
+from .settings import Settings, SubCommand
 
 
 class Arguments:
@@ -11,11 +11,6 @@ class Arguments:
     Parses the arguments for the restictool
     """
 
-    DEFAULT_CONFIGURATION_FILE = path.join(
-        environ["HOME"], ".config", "restictool", "restictool.yml"
-    )
-    DEFAULT_CACHE_DIR = path.join(environ["HOME"], ".cache", "restic")
-    DEFAULT_IMAGE = "restic/restic"
     HELP_EPILOG = """
     Use %(prog)s {backup,restore,run} --help to get the subcommand
     specific help.
@@ -28,7 +23,7 @@ class Arguments:
         self.tool_arguments = None
         self.restic_arguments = None
 
-    def parse(self, arguments=None):
+    def parse(self, arguments=None) -> Settings:
         """Parses the restictool arguments
 
         Args:
@@ -46,20 +41,20 @@ class Arguments:
         parser.add_argument(
             "-c",
             "--config",
-            default=self.DEFAULT_CONFIGURATION_FILE,
+            default=Settings.DEFAULT_CONFIGURATION_FILE,
             metavar="FILE",
             type=argparse.FileType("r"),
             help="the configuration file (default: %(default)s)",
         )
         parser.add_argument(
             "--cache",
-            default=self.DEFAULT_CACHE_DIR,
+            default=Settings.DEFAULT_CACHE_DIR,
             metavar="DIR",
             help="the cache directory (default: %(default)s)",
         )
         parser.add_argument(
             "--image",
-            default=self.DEFAULT_IMAGE,
+            default=Settings.DEFAULT_IMAGE,
             help="the docker restic image name (default: %(default)s)",
         )
         parser.add_argument(
@@ -76,7 +71,8 @@ class Arguments:
         )
 
         parser.add_argument(
-            "-q", "--quiet",
+            "-q",
+            "--quiet",
             action="store_true",
             help="silence output from the restic",
         )
@@ -121,3 +117,22 @@ class Arguments:
 
         self.tool_arguments = vars(parsed_args[0])
         self.restic_arguments = restic_args
+
+    def to_settings(self) -> Settings:
+        """Convert the parsed arguments to the settings class"""
+        settings = Settings()
+
+        settings.subcommand = SubCommand[self.tool_arguments["subcommand"].upper()]
+        settings.image = self.tool_arguments["image"]
+        settings.force_pull = self.tool_arguments["force_pull"]
+        settings.configuration_stream = self.tool_arguments["config"]
+        settings.cache_directory = self.tool_arguments["cache"]
+        settings.log_level = self.tool_arguments["log_level"].upper()
+        settings.quiet = self.tool_arguments["quiet"]
+        if "prune" in self.tool_arguments:
+            settings.prune = self.tool_arguments["prune"]
+        if "restore" in self.tool_arguments:
+            settings.restore_directory = self.tool_arguments["restore"]
+        settings.restic_arguments = self.restic_arguments
+
+        return settings

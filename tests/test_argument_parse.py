@@ -4,6 +4,7 @@ import os
 import pytest
 from pyfakefs import fake_filesystem_unittest
 from restictool.argument_parser import Arguments
+from restictool.settings import Settings, SubCommand
 
 
 class TestArgumentParser(fake_filesystem_unittest.TestCase):
@@ -32,10 +33,10 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
     def test_class_defaults(self):
         """Test default parameters"""
         self.assertEqual(
-            Arguments.DEFAULT_CONFIGURATION_FILE, self.default_configuration_file
+            Settings.DEFAULT_CONFIGURATION_FILE, self.default_configuration_file
         )
-        self.assertEqual(Arguments.DEFAULT_CACHE_DIR, self.default_cache_dir)
-        self.assertEqual(Arguments.DEFAULT_IMAGE, self.default_image)
+        self.assertEqual(Settings.DEFAULT_CACHE_DIR, self.default_cache_dir)
+        self.assertEqual(Settings.DEFAULT_IMAGE, self.default_image)
 
     def test_defaults(self):
         """Test default arguments"""
@@ -149,3 +150,52 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
 
         with pytest.raises(SystemExit):
             self.parser.parse(["restore"])
+
+    def test_to_settings(self):
+        """Test creating the settings class"""
+        self.parser.parse(["run"])
+        settings = self.parser.to_settings()
+
+        self.assertEqual(settings.subcommand, SubCommand.RUN)
+        self.assertEqual(
+            settings.configuration_stream.name, self.default_configuration_file
+        )
+        self.assertEqual(settings.image, Settings.DEFAULT_IMAGE)
+        self.assertFalse(settings.force_pull)
+        self.assertEqual(settings.cache_directory, Settings.DEFAULT_CACHE_DIR)
+        self.assertEqual(settings.log_level, "WARNING")
+        self.assertFalse(settings.prune)
+        self.assertFalse(settings.quiet)
+        self.assertIsNone(settings.restore_directory)
+
+        self.parser.parse(
+            [
+                "--cache",
+                "/tmp/cache",
+                "-q",
+                "--log-level=debug",
+                "--image",
+                "my/restic",
+                "--force-pull",
+                "restore",
+                "-r",
+                "/tmp/restore",
+            ]
+        )
+        settings = self.parser.to_settings()
+
+        settings = self.parser.to_settings()
+        self.assertEqual(settings.subcommand, SubCommand.RESTORE)
+        self.assertEqual(settings.image, "my/restic")
+        self.assertTrue(settings.force_pull)
+        self.assertEqual(settings.cache_directory, "/tmp/cache")
+        self.assertEqual(settings.log_level, "DEBUG")
+        self.assertFalse(settings.prune)
+        self.assertTrue(settings.quiet)
+        self.assertEqual(settings.restore_directory, "/tmp/restore")
+
+        self.parser.parse(["backup", "-p"])
+        settings = self.parser.to_settings()
+
+        self.assertEqual(settings.subcommand, SubCommand.BACKUP)
+        self.assertTrue(settings.prune)

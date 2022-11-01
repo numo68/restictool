@@ -8,6 +8,8 @@ import sys
 import docker
 import docker.errors
 
+from restictool.settings import Settings, SubCommand
+
 from .argument_parser import Arguments
 from .configuration_parser import Configuration
 
@@ -18,59 +20,54 @@ class ResticTool:
     BRIDGE_NETWORK_NAME = "bridge"
     OWN_HOSTNAME = "restic.local"
 
-    def __init__(self):
-        self.arguments = None
+    def __init__(self, settings: Settings):
+        self.settings = settings
         self.configuration = None
         self.client = None
         self.own_ip_address = None
 
-    def setup(self, args=None):
+    def setup(self):
         """Parse the arguments and fetch the configuration"""
-        self.arguments = Arguments()
-        self.arguments.parse(args)
-
-        logging.basicConfig(level=self.arguments.tool_arguments["log_level"].upper())
+        logging.basicConfig(level=self.settings.log_level)
 
         logging.info("Initializing")
 
         self.configuration = Configuration()
 
         try:
-            self.configuration.load(self.arguments.tool_arguments["config"])
+            self.configuration.load(self.settings.configuration_stream)
         except ValueError as ex:
             logging.error(ex.with_traceback(None))
             sys.exit(2)
 
-        if self.arguments.tool_arguments["subcommand"] != "check":
+        if self.settings.subcommand != SubCommand.CHECK:
             self.client = docker.from_env()
 
     def run(self):
         """Run the tool"""
         exit_code = 0
 
-        if self.arguments.tool_arguments["subcommand"] != "check":
+        if self.settings.subcommand != SubCommand.CHECK:
             self.pull_if_needed()
             self.create_directories()
             self.find_own_network()
 
-        if self.arguments.tool_arguments["subcommand"] == "run":
+        if self.settings.subcommand == SubCommand.RUN:
             exit_code = self.run_run()
-        elif self.arguments.tool_arguments["subcommand"] == "backup":
+        elif self.settings.subcommand == SubCommand.BACKUP:
             exit_code = self.run_backup()
-        elif self.arguments.tool_arguments["subcommand"] == "restore":
+        elif self.settings.subcommand == SubCommand.RESTORE:
             exit_code = self.run_restore()
-        elif self.arguments.tool_arguments["subcommand"] == "exists":
+        elif self.settings.subcommand == SubCommand.EXISTS:
             exit_code = self.run_exists()
-        elif self.arguments.tool_arguments["subcommand"] == "check":
+        elif self.settings.subcommand == SubCommand.CHECK:
             logging.info("Configuration is valid")
         else:
-            logging.fatal(
-                "Unknown command %s", self.arguments.tool_arguments["subcommand"]
-            )
+            logging.fatal("Unknown command %s", self.settings.subcommand.name)
             exit_code = 2
 
         if exit_code != 0:
-            if self.arguments.tool_arguments["subcommand"] != "exists":
+            if self.settings.subcommand != SubCommand.EXISTS:
                 logging.error("restic exited with code %d", exit_code)
             sys.exit(exit_code)
 
@@ -133,7 +130,7 @@ class ResticTool:
                     volumes=self.get_docker_mounts(),
                 )
 
-                if self.arguments.tool_arguments["prune"]:
+                if self.settings.prune:
                     logging.info("Pruning the repository")
 
                     code = self.run_docker(
@@ -194,41 +191,36 @@ class ResticTool:
 
     def pull_if_needed(self):
         """Pull the image if requested"""
-        if self.arguments.tool_arguments["force_pull"]:
-            image = self.arguments.tool_arguments["image"].split(":")
-            logging.info("Pulling image %s", self.arguments.tool_arguments["image"])
+        if self.settings.force_pull:
+            image = self.settings.image.split(":")
+            logging.info("Pulling image %s", self.settings.image)
             self.client.images.pull(
                 repository=image[0], tag=image[1] if len(image) > 1 else None
             )
 
+    def create_directory(self, path: str, name: str) -> bool:
+        """Create a directory if needed"""
+        if not os.path.exists(path):
+            logging.info("Creating %s directory %s", name, path)
+            os.makedirs(path, mode=0o755)
+
+        if not os.path.isdir(path):
+            logging.fatal(
+                "Could not create %s directory %s, exiting",
+                name,
+                path,
+            )
+            return False
+
+        return True
+
     def create_directories(self):
         """Create directories"""
-        if not os.path.exists(self.arguments.tool_arguments["cache"]):
-            logging.info(
-                "Creating cache directory %s", self.arguments.tool_arguments["cache"]
-            )
-            os.makedirs(self.arguments.tool_arguments["cache"], mode=0o755)
-
-        if not os.path.isdir(self.arguments.tool_arguments["cache"]):
-            logging.fatal(
-                "Could not create cache directory %s, exiting",
-                self.arguments.tool_arguments["cache"],
-            )
+        if not self.create_directory(self.settings.cache_directory, "cache"):
             sys.exit(2)
 
-        if self.arguments.tool_arguments["subcommand"] == "restore":
-            if not os.path.exists(self.arguments.tool_arguments["restore"]):
-                logging.info(
-                    "Creating restore directory %s",
-                    self.arguments.tool_arguments["restore"],
-                )
-                os.makedirs(self.arguments.tool_arguments["restore"], mode=0o755)
-
-            if not os.path.isdir(self.arguments.tool_arguments["restore"]):
-                logging.fatal(
-                    "Could not create restore directory %s, exiting",
-                    self.arguments.tool_arguments["restore"],
-                )
+        if self.settings.subcommand == SubCommand.RESTORE:
+            if not self.create_directory(self.settings.restore_directory, "restore"):
                 sys.exit(2)
 
     def get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
@@ -237,12 +229,12 @@ class ResticTool:
         """
         mounts = {}
 
-        mounts[self.arguments.tool_arguments["cache"]] = {
+        mounts[self.settings.cache_directory] = {
             "bind": "/cache",
             "mode": "rw",
         }
 
-        if self.arguments.tool_arguments["subcommand"] == "backup":
+        if self.settings.subcommand == SubCommand.BACKUP:
             if volume:
                 mounts[volume] = {
                     "bind": "/volume/" + volume,
@@ -255,8 +247,8 @@ class ResticTool:
                     "mode": "rw",
                 }
 
-        if self.arguments.tool_arguments["subcommand"] == "restore":
-            mounts[self.arguments.tool_arguments["restore"]] = {
+        if self.settings.subcommand == SubCommand.RESTORE:
+            mounts[self.settings.restore_directory] = {
                 "bind": "/target",
                 "mode": "rw",
             }
@@ -276,13 +268,15 @@ class ResticTool:
         """
         options = ["--cache-dir", "/cache"]
 
-        if self.arguments.tool_arguments["subcommand"] == "run":
+        if self.settings.subcommand == SubCommand.RUN:
             options.extend(self.configuration.get_options())
-        elif self.arguments.tool_arguments["subcommand"] == "exists":
+        elif self.settings.subcommand == SubCommand.EXISTS:
             options.extend(self.configuration.get_options())
             options.extend(["cat", "config"])
-        elif self.arguments.tool_arguments["subcommand"] == "backup":
-            options.extend(self.configuration.get_options(volume, localdir_name, forget))
+        elif self.settings.subcommand == SubCommand.BACKUP:
+            options.extend(
+                self.configuration.get_options(volume, localdir_name, forget)
+            )
             if not prune:
                 options.extend(["--host", self.configuration.hostname])
 
@@ -298,15 +292,15 @@ class ResticTool:
                 else:
                     options.append(f"/localdir/{localdir_name}")
 
-        elif self.arguments.tool_arguments["subcommand"] == "restore":
+        elif self.settings.subcommand == SubCommand.RESTORE:
             options.extend(self.configuration.get_options())
-            options.extend(["--target", self.arguments.tool_arguments["restore"]])
+            options.extend(["--target", self.settings.restore_directory])
             options.append("restore")
 
-        if self.arguments.restic_arguments:
-            options.extend(self.arguments.restic_arguments)
+        if self.settings.restic_arguments:
+            options.extend(self.settings.restic_arguments)
 
-        if self.arguments.tool_arguments["quiet"]:
+        if self.settings.quiet:
             options.append("-q")
 
         return options
@@ -322,7 +316,7 @@ class ResticTool:
         )
 
         container = self.client.containers.run(
-            image=self.arguments.tool_arguments["image"],
+            image=self.settings.image,
             command=command,
             remove=True,
             environment=env,
@@ -344,6 +338,9 @@ class ResticTool:
 
 def run():
     """Run the tool"""
-    tool = ResticTool()
+    arguments = Arguments()
+    arguments.parse()
+
+    tool = ResticTool(arguments.to_settings())
     tool.setup()
     tool.run()
