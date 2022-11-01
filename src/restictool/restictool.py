@@ -47,33 +47,48 @@ class ResticTool:
 
     def run(self):
         """Run the tool"""
+        exit_code = 0
+
         if self.arguments.tool_arguments["subcommand"] != "check":
             self.pull_if_needed()
             self.create_directories()
             self.find_own_network()
 
         if self.arguments.tool_arguments["subcommand"] == "run":
-            self.run_run()
+            exit_code = self.run_run()
         elif self.arguments.tool_arguments["subcommand"] == "backup":
-            self.run_backup()
+            exit_code = self.run_backup()
         elif self.arguments.tool_arguments["subcommand"] == "restore":
-            self.run_restore()
+            exit_code = self.run_restore()
         elif self.arguments.tool_arguments["subcommand"] == "check":
             pass
         else:
             logging.fatal(
                 "Unknown command %s", self.arguments.tool_arguments["subcommand"]
             )
-            sys.exit(2)
+            exit_code = 2
 
-    def run_run(self):
+        if exit_code != 0:
+            logging.error("restic exited with code %d", exit_code)
+            sys.exit(exit_code)
+
+    def run_run(self) -> int:
         """Run an arbitrary restic command"""
+        exit_code = self.run_docker(
+            command=self.get_restic_arguments(),
+            env=self.configuration.environment_vars,
+            volumes=self.get_docker_mounts()
+        )
 
-    def run_backup(self):
+        return exit_code
+
+    def run_backup(self) -> int:
         """Run the backup"""
+        return 0
 
-    def run_restore(self):
+    def run_restore(self) -> int:
         """Run the restore"""
+        return 0
 
     def find_own_network(self):
         """Find own address on the default bridge network"""
@@ -201,9 +216,25 @@ class ResticTool:
 
         return options
 
-    def run_docker(self, command: list, volumes: dict):
+    def run_docker(self, command: list, env: dict, volumes: dict) -> int:
         """Execute docker with the configured options"""
 
+        container = self.client.containers.run(
+            image=self.arguments.tool_arguments["image"],
+            command=command,
+            remove=True,
+            environment=env,
+            extra_hosts={"restictool.local": self.own_ip_address} if self.own_ip_address else None,
+            volumes=volumes,
+            detach=True
+        )
+
+        for log in container.logs(stream=True):
+            print(log.decode("utf-8").rstrip())
+
+        exit_code = container.wait()
+
+        return exit_code["StatusCode"]
 
 def run():
     """Run the tool"""
