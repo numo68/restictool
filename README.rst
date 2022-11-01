@@ -15,7 +15,9 @@ just to check the configuration file.
 
 The rest of the arguments is passed to the restic command. In case the
 such argument is a one recognized by the command as well,
-use ``--`` as a separator.
+use ``--`` as a separator. Any unrecognized argument starting with
+the dash is also passed to the restic command, check this if you are
+getting weird errors.
 
 As seen from the ``restic`` the snapshots created with the backup commands are
 ``/volume/VOLNAME`` for docker volumes and ``/localdir/TAG`` for locally
@@ -46,13 +48,12 @@ Common arguments
 ``--force-pull``
    force pulling of the docker image first
 
-``-q``
-   be quiet
-
-``-v``
-   be verbose. Repeat for increasing verbosity level. This only applies
-   to the tool itself to filter log output, verbosity for the restic itself
-   has to be specified through its own arguments.
+``--log-level``
+   log level for the tool (``critical``, ``error``, ``warning``,
+   ``info``, ``debug``, default: ``warning``). This applies to the tool itself;
+   messages from the restic are written to the standard output directly
+   and are controlled by arguments such as ``-q`` or ``-v`` passed
+   to the restic command.
 
 ``COMMAND``
    one of ``backup``, ``restore``, ``run`` or ``check``

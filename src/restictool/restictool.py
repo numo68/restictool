@@ -29,21 +29,20 @@ class ResticTool:
         self.arguments = Arguments()
         self.arguments.parse(args)
 
-        if self.arguments.get_verbosity_level() >= 3:
-            logging_level = logging.DEBUG
-        elif self.arguments.get_verbosity_level() >= 2:
-            logging_level = logging.INFO
-        else:
-            logging_level = logging.WARNING
-
-        logging.basicConfig(level=logging_level)
+        logging.basicConfig(level=self.arguments.tool_arguments["log_level"].upper())
 
         logging.info("Initializing")
 
         self.configuration = Configuration()
-        self.configuration.load(self.arguments.tool_arguments["config"])
 
-        self.client = docker.from_env()
+        try:
+            self.configuration.load(self.arguments.tool_arguments["config"])
+        except ValueError as ex:
+            logging.error(ex.with_traceback(None))
+            sys.exit(2)
+
+        if self.arguments.tool_arguments["subcommand"] != "check":
+            self.client = docker.from_env()
 
     def run(self):
         """Run the tool"""
@@ -61,7 +60,7 @@ class ResticTool:
         elif self.arguments.tool_arguments["subcommand"] == "restore":
             exit_code = self.run_restore()
         elif self.arguments.tool_arguments["subcommand"] == "check":
-            pass
+            logging.info("Configuration is valid")
         else:
             logging.fatal(
                 "Unknown command %s", self.arguments.tool_arguments["subcommand"]
@@ -186,8 +185,6 @@ class ResticTool:
         volume or local directory
         """
         options = ["--cache-dir", "/cache"]
-        if self.arguments.tool_arguments["quiet"]:
-            options.append("--quiet")
 
         if self.arguments.tool_arguments["subcommand"] == "run":
             options.extend(self.configuration.get_options())
@@ -235,6 +232,7 @@ class ResticTool:
         exit_code = container.wait()
 
         return exit_code["StatusCode"]
+
 
 def run():
     """Run the tool"""

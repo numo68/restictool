@@ -143,14 +143,13 @@ localdirs:
     def test_backup_options_volume(self):
         """Test docker options for volume backup"""
         tool = ResticTool()
-        tool.setup(["-q", "backup", "-p"])
+        tool.setup(["backup", "-p", "-q"])
         options = tool.get_restic_arguments(volume="my_volume")
         self.assertEqual(
             options,
             [
                 "--cache-dir",
                 "/cache",
-                "--quiet",
                 "--host",
                 "myhost",
                 "--insecure-tls",
@@ -159,20 +158,20 @@ localdirs:
                 "--exclude-caches",
                 "backup",
                 "/volume/my_volume",
+                "-q",
             ]
         )
 
     def test_backup_options_localdir(self):
         """Test docker options for volume backup"""
         tool = ResticTool()
-        tool.setup(["-q", "backup", "-p"])
+        tool.setup(["backup", "-p"])
         options = tool.get_restic_arguments(localdir="my_tag")
         self.assertEqual(
             options,
             [
                 "--cache-dir",
                 "/cache",
-                "--quiet",
                 "--host",
                 "myhost",
                 "--insecure-tls",
@@ -187,14 +186,13 @@ localdirs:
     def test_backup_options_forget(self):
         """Test docker options for volume backup"""
         tool = ResticTool()
-        tool.setup(["-q", "backup", "-p", "--my-arg1", "--my-arg2"])
+        tool.setup(["backup", "-p", "--my-arg1", "--my-arg2"])
         options = tool.get_restic_arguments(forget=True)
         self.assertEqual(
             options,
             [
                 "--cache-dir",
                 "/cache",
-                "--quiet",
                 "--host",
                 "myhost",
                 "--insecure-tls",

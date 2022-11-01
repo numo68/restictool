@@ -67,9 +67,18 @@ class Arguments:
             action="store_true",
             help="force pulling of the docker image first",
         )
-        parser.add_argument("-q", "--quiet", action="store_true", help="remain quiet")
+
         parser.add_argument(
-            "-v", "--verbose", action="count", default=0, help="be verbose"
+            "--log-level",
+            choices=[
+                "critical",
+                "error",
+                "warning",
+                "info",
+                "debug"
+            ],
+            default="warning",
+            help="set the logging level (default: %(default)s)",
         )
 
         subparsers = parser.add_subparsers(
@@ -111,9 +120,3 @@ class Arguments:
 
         self.tool_arguments = vars(parsed_args[0])
         self.restic_arguments = restic_args
-
-    def get_verbosity_level(self):
-        """Get the verbosity level as 0 for quiet, 1 for default and +1 for each -v"""
-        if self.tool_arguments["quiet"]:
-            return 0
-        return 1 + self.tool_arguments["verbose"]
