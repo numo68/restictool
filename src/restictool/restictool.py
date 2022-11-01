@@ -59,6 +59,8 @@ class ResticTool:
             exit_code = self.run_backup()
         elif self.arguments.tool_arguments["subcommand"] == "restore":
             exit_code = self.run_restore()
+        elif self.arguments.tool_arguments["subcommand"] == "exists":
+            exit_code = self.run_exists()
         elif self.arguments.tool_arguments["subcommand"] == "check":
             logging.info("Configuration is valid")
         else:
@@ -68,7 +70,8 @@ class ResticTool:
             exit_code = 2
 
         if exit_code != 0:
-            logging.error("restic exited with code %d", exit_code)
+            if self.arguments.tool_arguments["subcommand"] != "exists":
+                logging.error("restic exited with code %d", exit_code)
             sys.exit(exit_code)
 
     def run_run(self) -> int:
@@ -76,7 +79,7 @@ class ResticTool:
         exit_code = self.run_docker(
             command=self.get_restic_arguments(),
             env=self.configuration.environment_vars,
-            volumes=self.get_docker_mounts()
+            volumes=self.get_docker_mounts(),
         )
 
         return exit_code
@@ -89,12 +92,34 @@ class ResticTool:
         """Run the restore"""
         return 0
 
+    def run_exists(self) -> int:
+        """Run an arbitrary restic command"""
+        exit_code = self.run_docker(
+            command=self.get_restic_arguments(),
+            env=self.configuration.environment_vars,
+            volumes=self.get_docker_mounts(),
+            quiet=True,
+        )
+
+        if exit_code > 0:
+            logging.warning(
+                "Repository '%s' does not exist or is not reachable",
+                self.configuration.configuration["repository"]["location"],
+            )
+        else:
+            logging.info(
+                "Repository '%s' exists",
+                self.configuration.configuration["repository"]["location"],
+            )
+
+        return exit_code
+
     def find_own_network(self):
         """Find own address on the default bridge network"""
         try:
             bridge = self.client.networks.get(self.BRIDGE_NETWORK_NAME, scope="local")
             self.own_ip_address = bridge.attrs["IPAM"]["Config"][0]["Gateway"]
-            logging.info(
+            logging.debug(
                 "Own address on the '%s' network: %s",
                 self.BRIDGE_NETWORK_NAME,
                 self.own_ip_address,
@@ -188,6 +213,9 @@ class ResticTool:
 
         if self.arguments.tool_arguments["subcommand"] == "run":
             options.extend(self.configuration.get_options())
+        elif self.arguments.tool_arguments["subcommand"] == "exists":
+            options.extend(self.configuration.get_options())
+            options.extend(["cat", "config"])
         elif self.arguments.tool_arguments["subcommand"] == "backup":
             options.extend(["--host", self.configuration.hostname])
             options.extend(self.configuration.get_options(volume, localdir, forget))
@@ -213,7 +241,7 @@ class ResticTool:
 
         return options
 
-    def run_docker(self, command: list, env: dict, volumes: dict) -> int:
+    def run_docker(self, command: list, env: dict, volumes: dict, quiet=False) -> int:
         """Execute docker with the configured options"""
 
         container = self.client.containers.run(
@@ -221,13 +249,16 @@ class ResticTool:
             command=command,
             remove=True,
             environment=env,
-            extra_hosts={"restictool.local": self.own_ip_address} if self.own_ip_address else None,
+            extra_hosts={"restictool.local": self.own_ip_address}
+            if self.own_ip_address
+            else None,
             volumes=volumes,
-            detach=True
+            detach=True,
         )
 
         for log in container.logs(stream=True):
-            print(log.decode("utf-8").rstrip())
+            if not quiet:
+                print(log.decode("utf-8").rstrip())
 
         exit_code = container.wait()
 

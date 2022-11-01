@@ -70,13 +70,7 @@ class Arguments:
 
         parser.add_argument(
             "--log-level",
-            choices=[
-                "critical",
-                "error",
-                "warning",
-                "info",
-                "debug"
-            ],
+            choices=["critical", "error", "warning", "info", "debug"],
             default="warning",
             help="set the logging level (default: %(default)s)",
         )
@@ -110,6 +104,7 @@ class Arguments:
         )
 
         subparsers.add_parser("run", help="run the restic tool")
+        subparsers.add_parser("exists", help="check whether the repository exists")
         subparsers.add_parser("check", help="check the configuration file")
 
         parsed_args = parser.parse_known_args(arguments)

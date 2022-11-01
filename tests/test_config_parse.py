@@ -164,7 +164,7 @@ options:
                 "5",
                 "--keep-monthly",
                 "12",
-                "--add-opt"
+                "--add-opt",
             ],
         )
 

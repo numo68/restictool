@@ -154,12 +154,12 @@ localdirs:
                 "myhost",
                 "--insecure-tls",
                 "--volume-opt",
-                "--exclude=\"/volume/my_volume/some_dir\"",
+                '--exclude="/volume/my_volume/some_dir"',
                 "--exclude-caches",
                 "backup",
                 "/volume/my_volume",
                 "-q",
-            ]
+            ],
         )
 
     def test_backup_options_localdir(self):
@@ -177,10 +177,10 @@ localdirs:
                 "--insecure-tls",
                 "--localdir-opt1",
                 "--localdir-opt2",
-                "--exclude=\"/localdir/my_tag/some_dir\"",
+                '--exclude="/localdir/my_tag/some_dir"',
                 "backup",
                 "/localdir/my_tag",
-            ]
+            ],
         )
 
     def test_backup_options_forget(self):
@@ -202,13 +202,15 @@ localdirs:
                 "forget",
                 "--my-arg1",
                 "--my-arg2",
-            ]
+            ],
         )
 
     def test_restore_options(self):
         """Test docker options for restore"""
         tool = ResticTool()
-        tool.setup(["restore", "-r", "/restore/to", "my_snapshot", "--my-arg1", "--my-arg2"])
+        tool.setup(
+            ["restore", "-r", "/restore/to", "my_snapshot", "--my-arg1", "--my-arg2"]
+        )
         options = tool.get_restic_arguments(forget=True)
         self.assertEqual(
             options,
@@ -222,7 +224,7 @@ localdirs:
                 "my_snapshot",
                 "--my-arg1",
                 "--my-arg2",
-            ]
+            ],
         )
 
     def test_run_options(self):
@@ -239,5 +241,5 @@ localdirs:
                 "snapshots",
                 "--host",
                 "myhost",
-            ]
+            ],
         )

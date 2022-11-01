@@ -56,7 +56,7 @@ Common arguments
    to the restic command.
 
 ``COMMAND``
-   one of ``backup``, ``restore``, ``run`` or ``check``
+   one of ``backup``, ``restore``, ``run``, ``exists`` or ``check``
 
 Backup arguments
 ----------------
