@@ -66,6 +66,15 @@ class Configuration:
 
     ANONYMOUS_VOLUME_REGEX = re.compile(r"^[0-9a-fA-f]{48,}$")
 
+    FORGET_DEFAULT = [
+        "--keep-daily",
+        "7",
+        "--keep-weekly",
+        "5",
+        "--keep-monthly",
+        "12",
+    ]
+
     def __init__(self):
         self.configuration = None
         self.environment_vars = None
@@ -161,7 +170,11 @@ class Configuration:
             if "common" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["common"])
             if forget and "forget" in self.configuration["options"]:
-                options.extend(self.configuration["options"]["forget"])
+                for opt in self.configuration["options"]["forget"]:
+                    if opt == "DEFAULT":
+                        options.extend(self.FORGET_DEFAULT)
+                    else:
+                        options.append(opt)
             if volume and "volume" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["volume"])
             if localdir and "localdir" in self.configuration["options"]:

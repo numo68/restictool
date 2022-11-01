@@ -149,6 +149,9 @@ backup is completed with these arguments, optionally eith prune
 if specified. The ``run`` and ``restore`` commands get just the
 ``common`` ones.
 
+If ``'DEFAULT'`` is specified for forget it is expanded to
+``--keep-daily 7 --keep-weekly 5 --keep-monthly 12``.
+
 Volume backup specification
 ---------------------------
 

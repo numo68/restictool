@@ -142,6 +142,32 @@ repository:
             ["--insecure-tls", "--keep-daily", "7", "--keep-weekly", "5"],
         )
 
+    def test_options_forget_default(self):
+        """Test parsing of the forget default options"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  forget:
+    - DEFAULT
+    - --add-opt
+"""
+        )
+        self.assertEqual(
+            self.config.get_options(forget=True),
+            [
+                "--keep-daily",
+                "7",
+                "--keep-weekly",
+                "5",
+                "--keep-monthly",
+                "12",
+                "--add-opt"
+            ],
+        )
+
     def test_options_volume(self):
         """Test parsing of the volume options"""
         self.config.load(self.config_yaml)
