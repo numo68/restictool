@@ -4,7 +4,6 @@ Fetch the arguments, parse the configuration and run the selected functionality
 
 import logging
 import os
-import sys
 import docker
 import docker.errors
 
@@ -13,8 +12,40 @@ from restictool.settings import Settings, SubCommand
 from .configuration_parser import Configuration
 
 
+class ResticToolException(Exception):
+    """
+    Throw if an error prevents the tool to continue. If invoked from a command
+    line exit wit the code provided.
+    """
+
+    def __init__(self, code: int, description: str):
+        self.exit_code = code
+        self.description = description
+
+    def __str__(self):
+        return self.description
+
+
 class ResticTool:
-    """Main interface to the dockerized restic"""
+    """Main interface to the dockerized restic
+
+    Methods
+    -------
+
+    __init__(settings: Settings)
+        initializes an instance using the settings provided.
+
+    setup()
+        prepares the instance for the usage. Only call once.
+
+    run()
+        Runs the restic as specified by the settings.
+
+    Raises
+    ------
+    ResticToolException:
+        exception identified by the tool
+    """
 
     BRIDGE_NETWORK_NAME = "bridge"
     OWN_HOSTNAME = "restic.local"
@@ -36,8 +67,8 @@ class ResticTool:
         try:
             self.configuration.load(self.settings.configuration_stream)
         except ValueError as ex:
-            logging.error(ex.with_traceback(None))
-            sys.exit(2)
+            logging.fatal(ex.with_traceback(None))
+            raise ResticToolException(16, ex.with_traceback(None)) from ex
 
         if self.settings.subcommand != SubCommand.CHECK:
             self.client = docker.from_env()
@@ -65,12 +96,14 @@ class ResticTool:
             logging.info("Configuration is valid")
         else:
             logging.fatal("Unknown command %s", self.settings.subcommand.name)
-            exit_code = 2
+            raise ResticToolException(
+                16, f"Unknown command {self.settings.subcommand.name}"
+            )
 
         if exit_code != 0:
             if self.settings.subcommand != SubCommand.EXISTS:
                 logging.error("restic exited with code %d", exit_code)
-            sys.exit(exit_code)
+                raise ResticToolException(exit_code, f"restic exited with code {exit_code}")
 
     def run_general(self) -> int:
         """Run an arbitrary restic command"""
@@ -211,30 +244,26 @@ class ResticTool:
                 repository=image[0], tag=image[1] if len(image) > 1 else None
             )
 
-    def create_directory(self, path: str, name: str) -> bool:
+    def create_directory(self, path: str, name: str):
         """Create a directory if needed"""
-        if not os.path.exists(path):
-            logging.info("Creating %s directory %s", name, path)
-            os.makedirs(path, mode=0o755)
-
-        if not os.path.isdir(path):
+        try:
+            if not os.path.exists(path) or not os.path.isdir(path):
+                logging.info("Creating %s directory %s", name, path)
+                os.makedirs(path, mode=0o755)
+        except Exception as ex:
             logging.fatal(
                 "Could not create %s directory %s, exiting",
                 name,
                 path,
             )
-            return False
-
-        return True
+            raise ResticToolException(16, ex.with_traceback(None)) from ex
 
     def create_directories(self):
         """Create directories"""
-        if not self.create_directory(self.settings.cache_directory, "cache"):
-            sys.exit(2)
+        self.create_directory(self.settings.cache_directory, "cache")
 
         if self.settings.subcommand == SubCommand.RESTORE:
-            if not self.create_directory(self.settings.restore_directory, "restore"):
-                sys.exit(2)
+            self.create_directory(self.settings.restore_directory, "restore")
 
     def get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
         """
