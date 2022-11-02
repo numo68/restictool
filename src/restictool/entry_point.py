@@ -1,13 +1,18 @@
-"""Main entry point"""
+"""Main entry point used by both setuptools script and the package's
+top-level ``__main__``.
+"""
 
 import sys
 
 from .restic_tool import ResticTool, ResticToolException
 from .argument_parser import Arguments
 
+# pylint: disable=broad-except
+
 
 def run():
-    """Run the tool"""
+    """Fetch and parse the command-line arguments and run the tool.
+    """
 
     try:
         arguments = Arguments()

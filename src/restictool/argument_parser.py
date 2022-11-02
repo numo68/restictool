@@ -1,5 +1,4 @@
-"""
-Parses the arguments for the restictool
+"""Parses the arguments for the restictool
 """
 
 import argparse
@@ -9,7 +8,7 @@ from .settings import Settings, SubCommand
 class Arguments:
     """Parses the arguments for the restictool"""
 
-    HELP_EPILOG = """
+    _HELP_EPILOG = """
     Use %(prog)s {backup,restore,run} --help to get the subcommand
     specific help.
 
@@ -33,7 +32,7 @@ class Arguments:
             prog="restictool",
             formatter_class=argparse.RawDescriptionHelpFormatter,
             description="A Python wrapper for the dockerized restic tool",
-            epilog=self.HELP_EPILOG,
+            epilog=self._HELP_EPILOG,
         )
 
         parser.add_argument(

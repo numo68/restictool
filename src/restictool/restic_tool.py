@@ -36,8 +36,8 @@ class ResticTool:
         or set explicitly.
     """
 
-    BRIDGE_NETWORK_NAME = "bridge"
-    OWN_HOSTNAME = "restic.local"
+    _OWN_HOSTNAME = "restictool.local"
+    _BRIDGE_NETWORK_NAME = "bridge"
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -232,17 +232,17 @@ class ResticTool:
     def _find_own_network(self):
         """Find own address on the default bridge network"""
         try:
-            bridge = self.client.networks.get(self.BRIDGE_NETWORK_NAME, scope="local")
+            bridge = self.client.networks.get(self._BRIDGE_NETWORK_NAME, scope="local")
             self.own_ip_address = bridge.attrs["IPAM"]["Config"][0]["Gateway"]
             logging.debug(
                 "Own address on the '%s' network: %s",
-                self.BRIDGE_NETWORK_NAME,
+                self._BRIDGE_NETWORK_NAME,
                 self.own_ip_address,
             )
         except (docker.errors.NotFound, KeyError, TypeError, IndexError):
             logging.warning(
                 "Network '%s' not recognized, own address won't be added",
-                self.BRIDGE_NETWORK_NAME,
+                self._BRIDGE_NETWORK_NAME,
             )
             self.own_ip_address = None
 
@@ -376,7 +376,7 @@ class ResticTool:
             image=self.settings.image,
             command=command,
             environment=env,
-            extra_hosts={"restictool.local": self.own_ip_address}
+            extra_hosts={self._OWN_HOSTNAME: self.own_ip_address}
             if self.own_ip_address
             else None,
             volumes=volumes,

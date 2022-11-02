@@ -1,5 +1,4 @@
-"""
-Allows for testing of the module
+"""Allows to run the tool as ``python -m restictool ...``
 """
 
 from .entry_point import run

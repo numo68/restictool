@@ -47,12 +47,17 @@ SCHEMA = Schema(
 
 
 def validate(config):
-    """Validate the configuration file
+    """Validate the configuration file.
 
-    Args:
-        config (object): configuration to validate
+    Parameters
+    ----------
+    config : object
+        Configuration to validate.
 
-    Returns:
-        object: validated configuration
+    Returns
+    -------
+    object
+        Validated configuration.
     """
+
     return SCHEMA.validate(config)

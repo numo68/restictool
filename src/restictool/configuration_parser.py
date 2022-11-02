@@ -33,7 +33,6 @@ class Configuration:
     localdirs_to_backup : list
         List of the explicitly specified local directories to backup.
         Items are the (name, path) tuples.
-
     """
 
     _FORBIDDEN_ENV_VARS = [
