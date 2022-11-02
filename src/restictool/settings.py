@@ -18,7 +18,7 @@ class SubCommand(Enum):
 
 
 class Settings:
-    """Contains settings provided by either the command line or in another way
+    """Contains settings provided by either the command line or via other means.
     """
 
     DEFAULT_IMAGE = "restic/restic"

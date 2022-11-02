@@ -8,6 +8,8 @@ from restictool.argument_parser import Arguments
 from restictool.restic_tool import ResticTool
 from restictool.settings import Settings
 
+# pylint: disable=protected-access
+
 
 class TestResticTool(fake_filesystem_unittest.TestCase):
     """Test the tool helper methods"""
@@ -78,7 +80,7 @@ localdirs:
     def test_own_host(self):
         """Test docker network address determination"""
         tool = self.prepare_tool(["run"])
-        tool.find_own_network()
+        tool._find_own_network()
         self.assertEqual(tool.own_ip_address, self.OWN_IP_ADDRESS)
 
     def test_create_cache_directory(self):
@@ -87,7 +89,7 @@ localdirs:
             shutil.rmtree(self.default_cache_base)
         self.assertFalse(os.path.exists(self.default_cache_dir))
         tool = self.prepare_tool(["run"])
-        tool.create_directories()
+        tool._create_directories()
         self.assertTrue(os.path.exists(self.default_cache_dir))
 
     def test_create_restore_directory(self):
@@ -97,13 +99,13 @@ localdirs:
         if os.path.exists(restore_base):
             shutil.rmtree(restore_base)
         tool = self.prepare_tool(["restore", "-r", restore_dir])
-        tool.create_directories()
+        tool._create_directories()
         self.assertTrue(os.path.exists(restore_dir))
 
     def test_run_mount(self):
         """Test docker mounts for run"""
         tool = self.prepare_tool(["run"])
-        mounts = tool.get_docker_mounts()
+        mounts = tool._get_docker_mounts()
         self.assertEqual(
             mounts, {self.default_cache_dir: {"bind": "/cache", "mode": "rw"}}
         )
@@ -111,7 +113,7 @@ localdirs:
     def test_backup_mount_volume(self):
         """Test docker mounts for volume backup"""
         tool = self.prepare_tool(["backup"])
-        mounts = tool.get_docker_mounts(volume="my_volume")
+        mounts = tool._get_docker_mounts(volume="my_volume")
         self.assertEqual(
             mounts,
             {
@@ -123,7 +125,7 @@ localdirs:
     def test_backup_mount_localdir(self):
         """Test docker mounts for localdir backup"""
         tool = self.prepare_tool(["backup"])
-        mounts = tool.get_docker_mounts(localdir=("my_tag", "/path"))
+        mounts = tool._get_docker_mounts(localdir=("my_tag", "/path"))
         self.assertEqual(
             mounts,
             {
@@ -135,7 +137,7 @@ localdirs:
     def test_restore_mount(self):
         """Test docker mounts for restore"""
         tool = self.prepare_tool(["restore", "-r", "/tmp/restore/target"])
-        mounts = tool.get_docker_mounts()
+        mounts = tool._get_docker_mounts()
         self.assertEqual(
             mounts,
             {
@@ -147,7 +149,7 @@ localdirs:
     def test_backup_options_volume(self):
         """Test docker options for volume backup"""
         tool = self.prepare_tool(["backup", "-p", "-q"])
-        options = tool.get_restic_arguments(volume="my_volume")
+        options = tool._get_restic_arguments(volume="my_volume")
         self.assertEqual(
             options,
             [
@@ -168,7 +170,7 @@ localdirs:
     def test_backup_options_localdir(self):
         """Test docker options for volume backup"""
         tool = self.prepare_tool(["backup", "-p"])
-        options = tool.get_restic_arguments(localdir_name="my_tag")
+        options = tool._get_restic_arguments(localdir_name="my_tag")
         self.assertEqual(
             options,
             [
@@ -188,7 +190,7 @@ localdirs:
     def test_backup_options_forget(self):
         """Test docker options for forget"""
         tool = self.prepare_tool(["backup", "-p", "--my-arg1", "--my-arg2"])
-        options = tool.get_restic_arguments(forget=True)
+        options = tool._get_restic_arguments(forget=True)
         self.assertEqual(
             options,
             [
@@ -208,7 +210,7 @@ localdirs:
     def test_backup_options_prune(self):
         """Test docker options for prune"""
         tool = self.prepare_tool(["backup", "-p", "--my-arg1", "--my-arg2"])
-        options = tool.get_restic_arguments(prune=True)
+        options = tool._get_restic_arguments(prune=True)
         self.assertEqual(
             options,
             [
@@ -226,7 +228,7 @@ localdirs:
         tool = self.prepare_tool(
             ["restore", "-r", "/restore/to", "my_snapshot", "--my-arg1", "--my-arg2"]
         )
-        options = tool.get_restic_arguments(forget=True)
+        options = tool._get_restic_arguments(forget=True)
         self.assertEqual(
             options,
             [
@@ -245,7 +247,7 @@ localdirs:
     def test_run_options(self):
         """Test docker options for general run"""
         tool = self.prepare_tool(["run", "snapshots", "--host", "myhost"])
-        options = tool.get_restic_arguments(forget=True)
+        options = tool._get_restic_arguments(forget=True)
         self.assertEqual(
             options,
             [

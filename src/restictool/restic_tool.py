@@ -28,22 +28,12 @@ class ResticToolException(Exception):
 class ResticTool:
     """Main interface to the dockerized restic
 
-    Methods
-    -------
-
-    __init__(settings: Settings)
-        initializes an instance using the settings provided.
-
-    setup()
-        prepares the instance for the usage. Only call once.
-
-    run()
-        Runs the restic as specified by the settings.
-
-    Raises
-    ------
-    ResticToolException:
-        exception identified by the tool
+    Parameters
+    ----------
+    settings : Settings
+        Set of the parameters defining the tool configuration.
+        It can be either derived from the :class:`.Arguments`
+        or set explicitly.
     """
 
     BRIDGE_NETWORK_NAME = "bridge"
@@ -56,7 +46,14 @@ class ResticTool:
         self.own_ip_address = None
 
     def setup(self):
-        """Parse the arguments and fetch the configuration"""
+        """Reads and validates the configuration and prepares the tool.
+
+        Raises
+        ------
+        ResticToolException
+            If the configuration could not be loaded or is invalid or if
+            the settings specify an unsupported operation.
+        """
         logging.basicConfig(level=self.settings.log_level)
 
         logging.info("Initializing")
@@ -69,52 +66,67 @@ class ResticTool:
             logging.fatal(ex.with_traceback(None))
             raise ResticToolException(16, ex.with_traceback(None)) from ex
 
-        if self.settings.subcommand != SubCommand.CHECK:
-            self.client = docker.from_env()
-
-    def run(self):
-        """Run the tool"""
-        exit_code = 0
-
-        if self.settings.subcommand != SubCommand.CHECK:
-            self.pull_if_needed()
-            self.create_directories()
-            self.find_own_network()
-
-        if self.settings.subcommand == SubCommand.RUN:
-            exit_code = self.run_general()
-        elif self.settings.subcommand == SubCommand.BACKUP:
-            exit_code = self.run_backup()
-        elif self.settings.subcommand == SubCommand.RESTORE:
-            exit_code = self.run_restore()
-        elif self.settings.subcommand == SubCommand.SNAPSHOTS:
-            exit_code = self.run_general()
-        elif self.settings.subcommand == SubCommand.EXISTS:
-            exit_code = self.run_exists()
-        elif self.settings.subcommand == SubCommand.CHECK:
-            logging.info("Configuration is valid")
-        else:
+        if self.settings.subcommand not in [
+            SubCommand.CHECK,
+            SubCommand.RUN,
+            SubCommand.BACKUP,
+            SubCommand.RESTORE,
+            SubCommand.SNAPSHOTS,
+            SubCommand.EXISTS,
+        ]:
             logging.fatal("Unknown command %s", self.settings.subcommand.name)
             raise ResticToolException(
                 16, f"Unknown command {self.settings.subcommand.name}"
             )
 
-        if exit_code != 0:
-            if self.settings.subcommand != SubCommand.EXISTS:
-                logging.error("restic exited with code %d", exit_code)
-                raise ResticToolException(exit_code, f"restic exited with code {exit_code}")
+        if self.settings.subcommand != SubCommand.CHECK:
+            self.client = docker.from_env()
 
-    def run_general(self) -> int:
+    def run(self):
+        """Runs the tool according to the settings and the configuration.
+
+        Raises
+        ------
+        ResticToolException
+            If the restic container returned an non-zero status code.
+        """
+        exit_code = 0
+
+        if self.settings.subcommand == SubCommand.CHECK:
+            logging.info("Configuration is valid")  # Would not come here if invalid
+        else:
+            command_mux = {
+                SubCommand.RUN: self._run_general,
+                SubCommand.BACKUP: self._run_backup,
+                SubCommand.RESTORE: self._run_restore,
+                SubCommand.SNAPSHOTS: self._run_general,
+                SubCommand.EXISTS: self._run_exists,
+            }
+
+            self._pull_if_needed()
+            self._create_directories()
+            self._find_own_network()
+
+            exit_code = command_mux[self.settings.subcommand]()
+
+            if exit_code != 0:
+                if self.settings.subcommand != SubCommand.EXISTS:
+                    logging.error("restic exited with code %d", exit_code)
+                    raise ResticToolException(
+                        exit_code, f"restic exited with code {exit_code}"
+                    )
+
+    def _run_general(self) -> int:
         """Run an arbitrary restic command"""
-        exit_code = self.run_docker(
-            command=self.get_restic_arguments(),
+        exit_code = self._run_docker(
+            command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
-            volumes=self.get_docker_mounts(),
+            volumes=self._get_docker_mounts(),
         )
 
         return exit_code
 
-    def run_backup(self) -> int:
+    def _run_backup(self) -> int:
         """Run the backup"""
         backed_up = False
         exit_code = 0
@@ -131,10 +143,10 @@ class ResticTool:
             logging.info("Backing up volume '%s'", volume)
             backed_up = True
 
-            code = self.run_docker(
-                command=self.get_restic_arguments(volume=volume),
+            code = self._run_docker(
+                command=self._get_restic_arguments(volume=volume),
                 env=self.configuration.environment_vars,
-                volumes=self.get_docker_mounts(volume=volume),
+                volumes=self._get_docker_mounts(volume=volume),
             )
 
             if code > exit_code:
@@ -144,10 +156,10 @@ class ResticTool:
             logging.info("Backing up local directory '%s'", local_dir[1])
             backed_up = True
 
-            code = self.run_docker(
-                command=self.get_restic_arguments(localdir_name=local_dir[0]),
+            code = self._run_docker(
+                command=self._get_restic_arguments(localdir_name=local_dir[0]),
                 env=self.configuration.environment_vars,
-                volumes=self.get_docker_mounts(localdir=local_dir),
+                volumes=self._get_docker_mounts(localdir=local_dir),
             )
 
             if code > exit_code:
@@ -157,19 +169,19 @@ class ResticTool:
             if self.configuration.is_forget_specified():
                 logging.info("Forgetting expired backups")
 
-                code = self.run_docker(
-                    command=self.get_restic_arguments(forget=True),
+                code = self._run_docker(
+                    command=self._get_restic_arguments(forget=True),
                     env=self.configuration.environment_vars,
-                    volumes=self.get_docker_mounts(),
+                    volumes=self._get_docker_mounts(),
                 )
 
                 if self.settings.prune:
                     logging.info("Pruning the repository")
 
-                    code = self.run_docker(
-                        command=self.get_restic_arguments(prune=True),
+                    code = self._run_docker(
+                        command=self._get_restic_arguments(prune=True),
                         env=self.configuration.environment_vars,
-                        volumes=self.get_docker_mounts(),
+                        volumes=self._get_docker_mounts(),
                     )
 
                 if code > exit_code:
@@ -179,12 +191,12 @@ class ResticTool:
 
         return 0
 
-    def run_restore(self) -> int:
+    def _run_restore(self) -> int:
         """Run the restore"""
-        exit_code = self.run_docker(
-            command=self.get_restic_arguments(),
+        exit_code = self._run_docker(
+            command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
-            volumes=self.get_docker_mounts(),
+            volumes=self._get_docker_mounts(),
         )
 
         if exit_code == 0:
@@ -195,12 +207,12 @@ class ResticTool:
 
         return exit_code
 
-    def run_exists(self) -> int:
+    def _run_exists(self) -> int:
         """Run an arbitrary restic command"""
-        exit_code = self.run_docker(
-            command=self.get_restic_arguments(),
+        exit_code = self._run_docker(
+            command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
-            volumes=self.get_docker_mounts(),
+            volumes=self._get_docker_mounts(),
             quiet=True,
         )
 
@@ -217,7 +229,7 @@ class ResticTool:
 
         return exit_code
 
-    def find_own_network(self):
+    def _find_own_network(self):
         """Find own address on the default bridge network"""
         try:
             bridge = self.client.networks.get(self.BRIDGE_NETWORK_NAME, scope="local")
@@ -234,7 +246,7 @@ class ResticTool:
             )
             self.own_ip_address = None
 
-    def pull_if_needed(self):
+    def _pull_if_needed(self):
         """Pull the image if requested"""
         if self.settings.force_pull:
             image = self.settings.image.split(":")
@@ -243,7 +255,7 @@ class ResticTool:
                 repository=image[0], tag=image[1] if len(image) > 1 else None
             )
 
-    def create_directory(self, path: str, name: str):
+    def _create_directory(self, path: str, name: str):
         """Create a directory if needed"""
         try:
             if not os.path.exists(path) or not os.path.isdir(path):
@@ -257,14 +269,14 @@ class ResticTool:
             )
             raise ResticToolException(16, ex.with_traceback(None)) from ex
 
-    def create_directories(self):
+    def _create_directories(self):
         """Create directories"""
-        self.create_directory(self.settings.cache_directory, "cache")
+        self._create_directory(self.settings.cache_directory, "cache")
 
         if self.settings.subcommand == SubCommand.RESTORE:
-            self.create_directory(self.settings.restore_directory, "restore")
+            self._create_directory(self.settings.restore_directory, "restore")
 
-    def get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
+    def _get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
         """
         Get the dict that can be used as ``volumes`` argument to run()
         """
@@ -296,7 +308,7 @@ class ResticTool:
 
         return mounts
 
-    def get_restic_arguments(
+    def _get_restic_arguments(
         self,
         volume: str = None,
         localdir_name: str = None,
@@ -350,7 +362,7 @@ class ResticTool:
 
         return options
 
-    def run_docker(self, command: list, env: dict, volumes: dict, quiet=False) -> int:
+    def _run_docker(self, command: list, env: dict, volumes: dict, quiet=False) -> int:
         """Execute docker with the configured options"""
 
         logging.debug(

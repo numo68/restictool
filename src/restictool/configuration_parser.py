@@ -19,40 +19,24 @@ class Configuration:
     ----------
 
     configuration : dict
-        a parsed and validated configuration
+        A parsed and validated configuration.
     environment_vars : dict
-        a dictionary of environment names and values to be passed to the restic
-        container
+        A dictionary of environment names and values to be passed to the restic
+        container.
     hostname : str
-        name of the host to be used for the restic backup and restore.
+        Name of the host to be used for the restic backup and restore.
     volumes_to_backup : list
-        list of the explicitly specified volumes to backup
+        List of the explicitly specified volumes to backup.
     backup_all_volumes: bool
-        if the list of volumes contains a ``*``, volumes_to_backup is empty
-        and this attribute is True
+        If the list of volumes contains a ``*``, volumes_to_backup is empty
+        and this attribute is True.
     localdirs_to_backup : list
-        list of the explicitly specified local directories to backup.
-        Items are the (name, path) tuples
+        List of the explicitly specified local directories to backup.
+        Items are the (name, path) tuples.
 
-    Methods
-    -------
-
-    load(stream, close=True)
-        loads, parses and validates the configuration from a stream. If the stream
-        is an instance of io.IOBase and the close argument is True, it will be closed.
-
-    get_options(volume : str, localdir : str) -> list
-        returns the list of restic command-line options to use. If volume or localdir
-        are specified, the volume/localdir options are appended as well, both general
-        and per-volume/localdir
-
-    is_volume_backed_up(volume : str) -> bool
-        True if the specified volume should be backed up. If there is a ``*`` entry,
-        all volumes except anonymous ones (48+ hex characters) match. If there is not,
-        the name has to match exactly.
     """
 
-    FORBIDDEN_ENV_VARS = [
+    _FORBIDDEN_ENV_VARS = [
         "RESTIC_REPOSITORY",
         "RESTIC_REPOSITORY_FILE",
         "RESTIC_PASSWORD",
@@ -62,9 +46,9 @@ class Configuration:
         "TMPDIR",
     ]
 
-    ANONYMOUS_VOLUME_REGEX = re.compile(r"^[0-9a-fA-f]{48,}$")
+    _ANONYMOUS_VOLUME_REGEX = re.compile(r"^[0-9a-fA-f]{48,}$")
 
-    FORGET_DEFAULT = [
+    _FORGET_DEFAULT = [
         "--keep-daily",
         "7",
         "--keep-weekly",
@@ -82,13 +66,21 @@ class Configuration:
         self.localdirs_to_backup = None
 
     def load(self, stream, close=True) -> None:
-        """Loads the stream and does the initial parsing and sanity checking
+        """Loads, parses and validates the configuration from a stream.
 
-        Args:
-            stream (IOBase): configuration file opened as stream
-            close (bool): close the stream after reading
+        Parameters
+        ----------
+        stream : io.IOBase | str
+            Stream to read the configuration from.
+        close : bool, optional
+            If the stream is an instance of io.IOBase and the close argument is True,
+            it will be closed. The default is True.
+
+        Raises
+        ------
+        ValueError
+            If the configuration is invalid.
         """
-
         try:
             config = safe_load(stream)
         except Exception as ex:
@@ -135,7 +127,14 @@ class Configuration:
                 self.localdirs_to_backup.append((ldir["name"], dir_path))
 
     def create_env_vars(self) -> None:
-        """Parse and set the environment variables"""
+        """Retrieves the environment variables the restic is to be executed with.
+
+        Raises
+        ------
+        ValueError
+            If the configuration specifies variables that are forbidden to set
+            from the configuration.
+        """
         self.environment_vars = {}
 
         if "authentication" in self.configuration["repository"]:
@@ -146,7 +145,7 @@ class Configuration:
         if "extra" in self.configuration["repository"]:
             self.environment_vars.update(self.configuration["repository"]["extra"])
 
-        for key in self.FORBIDDEN_ENV_VARS:
+        for key in self._FORBIDDEN_ENV_VARS:
             if key in self.environment_vars:
                 raise ValueError(f"configuration invalid: variable {key} is forbidden")
 
@@ -160,7 +159,25 @@ class Configuration:
     def get_options(
         self, volume: str = None, localdir: str = None, forget: bool = False
     ) -> list:
-        """Collect the list of the options to be used for restic invocation"""
+        """Retrieves the options the restic is to be executed with.
+
+        If volume or localdir are specified, the volume/localdir options are appended
+        as well, both general and per-volume/localdir.
+
+        Parameters
+        ----------
+        volume : str, optional
+            The volume being backed up, by default None.
+        localdir : str, optional
+            The local directory being backed up, by default None.
+        forget : bool, optional
+            Return the options for the ``forget`` pass after the backup, by default False.
+
+        Returns
+        -------
+        list
+            The list of restic command-line options to use.
+        """
 
         options = []
 
@@ -170,7 +187,7 @@ class Configuration:
             if forget and "forget" in self.configuration["options"]:
                 for opt in self.configuration["options"]["forget"]:
                     if opt == "DEFAULT":
-                        options.extend(self.FORGET_DEFAULT)
+                        options.extend(self._FORGET_DEFAULT)
                     else:
                         options.append(opt)
             if volume and "volume" in self.configuration["options"]:
@@ -179,16 +196,14 @@ class Configuration:
                 options.extend(self.configuration["options"]["localdir"])
 
         if volume:
-            options.extend(self.get_volume_options(volume))
+            options.extend(self._get_volume_options(volume))
 
         if localdir:
-            options.extend(self.get_localdir_options(localdir))
+            options.extend(self._get_localdir_options(localdir))
 
         return options
 
-    def get_volume_options(self, volume: str) -> list:
-        """Collect the list of volume-related options to be used for restic invocation"""
-
+    def _get_volume_options(self, volume: str) -> list:
         options = []
 
         if "volumes" in self.configuration:
@@ -206,9 +221,7 @@ class Configuration:
 
         return options
 
-    def get_localdir_options(self, localdir: str) -> list:
-        """Collect the list of volume-related options to be used for restic invocation"""
-
+    def _get_localdir_options(self, localdir: str) -> list:
         options = []
 
         if "localdirs" in self.configuration:
@@ -221,14 +234,34 @@ class Configuration:
         return options
 
     def is_volume_backed_up(self, volume: str) -> bool:
-        """Returns whether the volume is to be backed up"""
+        """Check whether a volume with a specified name is to be backed up.
+
+        Parameters
+        ----------
+        volume : str
+            The name of the volume.
+
+        Returns
+        -------
+        bool
+            True if the specified volume should be backed up. If there is a ``*``
+            entry, all volumes except anonymous ones (48+ hex characters) match.
+            If there is not, the name has to match exactly.
+        """
+
         if self.backup_all_volumes:
-            return not self.ANONYMOUS_VOLUME_REGEX.match(volume)
+            return not self._ANONYMOUS_VOLUME_REGEX.match(volume)
 
         return volume in self.volumes_to_backup
 
     def is_forget_specified(self) -> bool:
-        """Returns whether the forget should be run after backing up"""
+        """Check whether a ``forget`` should be run after finishing the backup.
+
+        Returns
+        -------
+        bool
+            The configuration specifies the settings for a ``forget`` pass.
+        """
         return (
             "options" in self.configuration
             and "forget" in self.configuration["options"]
