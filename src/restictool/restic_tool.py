@@ -112,9 +112,10 @@ class ResticTool:
             if exit_code != 0:
                 if self.settings.subcommand != SubCommand.EXISTS:
                     logging.error("restic exited with code %d", exit_code)
-                    raise ResticToolException(
-                        exit_code, f"restic exited with code {exit_code}"
-                    )
+
+                raise ResticToolException(
+                    exit_code, f"restic exited with code {exit_code}"
+                )
 
     def _run_general(self) -> int:
         """Run an arbitrary restic command"""
