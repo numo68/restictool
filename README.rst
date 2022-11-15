@@ -1,7 +1,7 @@
 Usage
 =====
 
-**restictool** is a Pyhton wrapper to the dockerized `restic <https://restic.net>`_ backup tool.
+**restictool** is a Python wrapper to the dockerized `restic <https://restic.net>`_ backup tool.
 
 The tool allows to backup docker volumes and local directories, to restore
 a snapshot to a local directory, to run arbitrary restic commands and

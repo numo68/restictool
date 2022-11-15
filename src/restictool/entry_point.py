@@ -11,8 +11,7 @@ from .argument_parser import Arguments
 
 
 def run():
-    """Fetch and parse the command-line arguments and run the tool.
-    """
+    """Fetch and parse the command-line arguments and run the tool."""
 
     try:
         arguments = Arguments()
