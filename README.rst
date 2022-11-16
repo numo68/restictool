@@ -39,7 +39,7 @@ Common arguments
    show the help message and exit. If COMMAND is present, shows the help
    for the command
 
-``-c FILE``, ``--c FILE``
+``-c FILE``, ``--config FILE``
    the configuration file (default: ``~/.config/restic/restictool.yml``)
 
 ``--cache DIR``
@@ -58,7 +58,7 @@ Common arguments
    and can be silenced by ``-q`` passed to either for this tool or
    the restic command
 
-``-q``, ``-quiet``
+``-q``, ``--quiet``
    Pass the ``-q`` option to the restic command
 
 ``COMMAND``
