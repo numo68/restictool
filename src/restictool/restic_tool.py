@@ -2,6 +2,7 @@
 Fetch the arguments, parse the configuration and run the selected functionality
 """
 
+import json
 import logging
 import os
 import docker
@@ -70,6 +71,7 @@ class ResticTool:
             SubCommand.CHECK,
             SubCommand.RUN,
             SubCommand.BACKUP,
+            SubCommand.DOCKERDR,
             SubCommand.RESTORE,
             SubCommand.SNAPSHOTS,
             SubCommand.EXISTS,
@@ -99,6 +101,7 @@ class ResticTool:
                 SubCommand.RUN: self._run_general,
                 SubCommand.BACKUP: self._run_backup,
                 SubCommand.RESTORE: self._run_restore,
+                SubCommand.DOCKERDR: self._run_dockerdr,
                 SubCommand.SNAPSHOTS: self._run_general,
                 SubCommand.EXISTS: self._run_exists,
             }
@@ -119,7 +122,7 @@ class ResticTool:
 
     def _run_general(self) -> int:
         """Run an arbitrary restic command"""
-        exit_code = self._run_docker(
+        exit_code, _ = self._run_docker(
             command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
             volumes=self._get_docker_mounts(),
@@ -144,7 +147,7 @@ class ResticTool:
             logging.info("Backing up volume '%s'", volume)
             backed_up = True
 
-            code = self._run_docker(
+            code, _ = self._run_docker(
                 command=self._get_restic_arguments(volume=volume),
                 env=self.configuration.environment_vars,
                 volumes=self._get_docker_mounts(volume=volume),
@@ -157,7 +160,7 @@ class ResticTool:
             logging.info("Backing up local directory '%s'", local_dir[1])
             backed_up = True
 
-            code = self._run_docker(
+            code, _ = self._run_docker(
                 command=self._get_restic_arguments(localdir_name=local_dir[0]),
                 env=self.configuration.environment_vars,
                 volumes=self._get_docker_mounts(localdir=local_dir),
@@ -170,7 +173,7 @@ class ResticTool:
             if self.configuration.is_forget_specified():
                 logging.info("Forgetting expired backups")
 
-                code = self._run_docker(
+                code, _ = self._run_docker(
                     command=self._get_restic_arguments(forget=True),
                     env=self.configuration.environment_vars,
                     volumes=self._get_docker_mounts(),
@@ -179,7 +182,7 @@ class ResticTool:
                 if self.settings.prune:
                     logging.info("Pruning the repository")
 
-                    code = self._run_docker(
+                    code, _ = self._run_docker(
                         command=self._get_restic_arguments(prune=True),
                         env=self.configuration.environment_vars,
                         volumes=self._get_docker_mounts(),
@@ -192,9 +195,105 @@ class ResticTool:
 
         return 0
 
+    def _run_dockerdr(self) -> int:
+        """Run the docker volume disaster recovery"""
+
+        # Get the volumes
+        volumes = {
+            v.attrs["Name"]: v.attrs["Mountpoint"]
+            for v in self.client.volumes.list()
+            if v.attrs["Driver"] == "local"
+        }
+
+        # Get the snapshots
+        options = ["--cache-dir", "/cache", "snapshots"]
+        options.extend(self.configuration.get_options())
+        options.extend(
+            ["--latest=1", "--host=" + self.configuration.hostname, "--json"]
+        )
+
+        code, output = self._run_docker(
+            options,
+            env=self.configuration.environment_vars,
+            volumes=self._get_docker_mounts(),
+            quiet=True,
+        )
+
+        if code > 0:
+            logging.error("Could not retrieve snapshots")
+            return code
+
+        snapshots = json.loads(output)
+
+        exit_code = 0
+
+        for snapshot in snapshots:
+            if not snapshot["paths"][0].startswith("/volume/"):
+                continue
+            volume_name = snapshot["paths"][0][8:]
+            snapshot_id = snapshot["short_id"]
+            if volume_name not in volumes.keys():
+                continue
+            dest_dir = os.path.dirname(volumes[volume_name])
+            dest_last_component = os.path.basename(volumes[volume_name])
+            logging.info(
+                "Restoring volume %s from snapshot %s to %s",
+                volume_name,
+                snapshot_id,
+                dest_dir,
+            )
+
+            options = ["--cache-dir", "/cache", "restore"]
+            options.extend(self.configuration.get_options())
+            options.extend([snapshot_id, "--target=/target"])
+
+            mounts = self._get_docker_mounts()
+            mounts[dest_dir] = {
+                "bind": "/target",
+                "mode": "rw",
+            }
+
+            code, _ = self._run_docker(
+                command=options,
+                env=self.configuration.environment_vars,
+                volumes=mounts,
+            )
+
+            if code == 0:
+                code, _ = self._run_docker(
+                    entrypoint="/bin/mv",
+                    command=[
+                        os.path.join("/target/volume", volume_name),
+                        os.path.join("/target", dest_last_component + ".restored"),
+                    ],
+                    env=self.configuration.environment_vars,
+                    volumes=mounts,
+                )
+
+            if code == 0:
+                code, _ = self._run_docker(
+                    entrypoint="/bin/rmdir",
+                    command=["/target/volume"],
+                    env=self.configuration.environment_vars,
+                    volumes=mounts,
+                )
+
+            if code > 0:
+                logging.error(
+                    "Restoring volume %s from snapshot %s to %s failed",
+                    volume_name,
+                    snapshot_id,
+                    dest_dir,
+                )
+
+                if code > exit_code:
+                    exit_code = code
+
+        return exit_code
+
     def _run_restore(self) -> int:
         """Run the restore"""
-        exit_code = self._run_docker(
+        exit_code, _ = self._run_docker(
             command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
             volumes=self._get_docker_mounts(),
@@ -210,7 +309,7 @@ class ResticTool:
 
     def _run_exists(self) -> int:
         """Run an arbitrary restic command"""
-        exit_code = self._run_docker(
+        exit_code, _ = self._run_docker(
             command=self._get_restic_arguments(),
             env=self.configuration.environment_vars,
             volumes=self._get_docker_mounts(),
@@ -363,7 +462,9 @@ class ResticTool:
 
         return options
 
-    def _run_docker(self, command: list, env: dict, volumes: dict, quiet=False) -> int:
+    def _run_docker(
+        self, command: list, env: dict, volumes: dict, quiet=False, entrypoint=None
+    ) -> int:
         """Execute docker with the configured options"""
 
         logging.debug(
@@ -375,6 +476,7 @@ class ResticTool:
 
         container = self.client.containers.run(
             image=self.settings.image,
+            entrypoint=entrypoint,
             command=command,
             environment=env,
             extra_hosts={self._OWN_HOSTNAME: self.own_ip_address}
@@ -384,12 +486,15 @@ class ResticTool:
             detach=True,
         )
 
+        log_save = ""
         for log in container.logs(stream=True):
+            line = log.decode("utf-8")
+            log_save += line
             if not quiet:
-                print(log.decode("utf-8").rstrip())
+                print(line.rstrip())
 
         exit_code = container.wait()
 
         container.remove()
 
-        return exit_code["StatusCode"]
+        return (exit_code["StatusCode"], log_save)

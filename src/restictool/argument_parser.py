@@ -109,6 +109,7 @@ class Arguments:
             help="snapshot to restore from (default: %(default)s)",
         )
 
+        subparsers.add_parser("dockerdr", help="restore all docker volumes")
         subparsers.add_parser("snapshots", help="list the snapshots in the repository")
         subparsers.add_parser("run", help="run the restic tool")
         subparsers.add_parser("exists", help="check whether the repository exists")

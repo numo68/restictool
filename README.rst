@@ -62,8 +62,8 @@ Common arguments
    Pass the ``-q`` option to the restic command
 
 ``COMMAND``
-   one of ``backup``, ``restore``, ``snapshots``, ``run``, ``exists`` or 
-   ``check``
+   one of ``backup``, ``restore``, ``snapshots``, ``run``,
+   ``dockerdr``, ``exists`` or ``check``
 
 Backup arguments
 ----------------
@@ -87,6 +87,17 @@ finding the latest snapshot containing the specified local directory.
 The directory will be created if it does not exist. Note that as
 the restored files are written from inside the docker container they will
 be written from the context of the root user. Watch for mishaps.
+
+Docker disaster recovery arguments
+----------------------------------
+
+The docker disaster recovery restores all the volumes existing both on the
+local system and the backup to the latest snapshot. The list of the
+volumes in the configuration is ignored, as are volume-specific options.
+
+The data are restored to a directory derived from the mountpoint of the volume,
+meaning that if the volume resides on ``/var/lib/docker/volumes/foo/_data``
+it will be restored to ``/var/lib/docker/volumes/foo/_data.restored``.
 
 Snapshots arguments
 -------------------

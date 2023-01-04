@@ -11,10 +11,11 @@ class SubCommand(Enum):
     NOTSET = 0
     BACKUP = 1
     RESTORE = 2
-    SNAPSHOTS = 3
-    RUN = 4
-    EXISTS = 5
-    CHECK = 6
+    DOCKERDR = 3
+    SNAPSHOTS = 4
+    RUN = 5
+    EXISTS = 6
+    CHECK = 7
 
 
 class Settings:
