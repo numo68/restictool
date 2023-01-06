@@ -63,7 +63,7 @@ class ResticTool:
         log_function(
             *args,
             extra={
-                "operation": str(self.settings.subcommand).lower(),
+                "operation": str(self.settings.subcommand)[11:].lower(),
                 "repoLocation": self.configuration.configuration["repository"][
                     "location"
                 ],
@@ -110,7 +110,7 @@ class ResticTool:
             stream: ext://sys.stderr
     formatters:
         detailed:
-            format: '%(asctime)s %(levelname)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+            format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
             datefmt: '%Y-%m-%d %H:%M:%S'
 """
                 )
