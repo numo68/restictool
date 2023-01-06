@@ -153,6 +153,57 @@ The variable names will be converted to uppercase and the values passed 1:1.
 Some variables cannot be defined (for example ``RESTIC_CACHE_DIR`` or
 ``RESTIC_PASSWORD``).
 
+Logging configuration
+---------------------
+
+If the default of logging to the standard error is not suitable, the logging
+configuration can be provided via the `logging` key. The content has to conform
+to the `dictionary schema <https://docs.python.org/3/library/logging.config.html#logging-config-dictschema>`_.
+If provided, the `--log-level` command-line option is used to set the level
+for the logger named `console`, if there is any.
+
+The following extra arguments can be used in the formatters: `operation`, `repoLocation`,
+`repoHost`, `object` meaning the performed operation, repository location and name,
+and the object being backed up.
+
+**CAUTION**: The DEBUG level logs sensitive information such as secret keys and passwords.
+
+.. code-block:: yaml
+
+    logging:
+        version: 1
+        root:
+            handlers:
+                - console
+                - file
+                - syslog
+            level: INFO
+        handlers:
+            console:
+                class: logging.StreamHandler
+                level: INFO
+                formatter: detailed
+                stream: ext://sys.stderr
+            file:
+                class: logging.handlers.RotatingFileHandler
+                level: INFO
+                formatter: detailed
+                filename: /tmp/restictool.log
+                maxBytes: 65536
+                backupCount: 3
+            syslog:
+                class: logging.handlers.SysLogHandler
+                level: INFO
+                address: /dev/log
+                facility: daemon
+                formatter: syslog
+        formatters:
+            detailed:
+                format: '%(asctime)s %(levelname)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+                datefmt: '%Y-%m-%d %H:%M:%S'
+            syslog:
+                format: 'restictool[%(process)d] %(levelname)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+
 Command-line options for restic
 -------------------------------
 

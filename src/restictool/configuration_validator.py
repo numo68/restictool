@@ -39,6 +39,7 @@ LOCALDIR_SCHEMA = Schema(
 SCHEMA = Schema(
     {
         "repository": REPOSITORY_SCHEMA,
+        Optional("logging"): dict,
         Optional("options"): OPTIONS_SCHEMA,
         Optional("volumes"): [VOLUME_SCHEMA],
         Optional("localdirs"): [LOCALDIR_SCHEMA],

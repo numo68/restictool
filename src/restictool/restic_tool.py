@@ -4,9 +4,11 @@ Fetch the arguments, parse the configuration and run the selected functionality
 
 import json
 import logging
+import logging.config
 import os
 import docker
 import docker.errors
+import yaml
 
 from restictool.settings import Settings, SubCommand
 
@@ -46,6 +48,30 @@ class ResticTool:
         self.client = None
         self.own_ip_address = None
 
+    def log(self, log_function, *args, entity=None):
+        """Log the message, filling out the extras.
+
+        Parameters
+        ----------
+        log_function : callable
+            logging.error etc.
+        args : Any
+            Arguments for the logging function
+        entity : str | None
+            Volume or local directory name to backup or restore, if known
+        """
+        log_function(
+            *args,
+            extra={
+                "operation": str(self.settings.subcommand).lower(),
+                "repoLocation": self.configuration.configuration["repository"][
+                    "location"
+                ],
+                "repoHost": self.configuration.configuration["repository"]["host"],
+                "object": entity if entity is not None else "(None)",
+            },
+        )
+
     def setup(self):
         """Reads and validates the configuration and prepares the tool.
 
@@ -55,15 +81,42 @@ class ResticTool:
             If the configuration could not be loaded or is invalid or if
             the settings specify an unsupported operation.
         """
-        logging.basicConfig(level=self.settings.log_level)
-
-        logging.info("Initializing")
 
         self.configuration = Configuration()
 
         try:
             self.configuration.load(self.settings.configuration_stream)
-        except ValueError as ex:
+            if "logging" in self.configuration.configuration:
+                # Set the level if the console handler is present
+                try:
+                    self.configuration.configuration["logging"]["handlers"]["console"][
+                        "level"
+                    ] = self.settings.log_level
+                except Exception:  # pylint: disable=broad-except
+                    pass
+
+                logging.config.dictConfig(self.configuration.configuration["logging"])
+            else:
+                config = yaml.safe_load(
+                    """
+    version: 1
+    root:
+        handlers:
+            - console
+    handlers:
+        console:
+            class: logging.StreamHandler
+            formatter: detailed
+            stream: ext://sys.stderr
+    formatters:
+        detailed:
+            format: '%(asctime)s %(levelname)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+            datefmt: '%Y-%m-%d %H:%M:%S'
+"""
+                )
+                config["root"]["level"] = self.settings.log_level
+                logging.config.dictConfig(config)
+        except Exception as ex:
             logging.fatal(ex.with_traceback(None))
             raise ResticToolException(16, ex.with_traceback(None)) from ex
 
@@ -76,7 +129,7 @@ class ResticTool:
             SubCommand.SNAPSHOTS,
             SubCommand.EXISTS,
         ]:
-            logging.fatal("Unknown command %s", self.settings.subcommand.name)
+            self.log(logging.fatal, "Unknown command %s", self.settings.subcommand.name)
             raise ResticToolException(
                 16, f"Unknown command {self.settings.subcommand.name}"
             )
@@ -95,7 +148,9 @@ class ResticTool:
         exit_code = 0
 
         if self.settings.subcommand == SubCommand.CHECK:
-            logging.info("Configuration is valid")  # Would not come here if invalid
+            self.log(
+                logging.info, "Configuration is valid"
+            )  # Would not come here if invalid
         else:
             command_mux = {
                 SubCommand.RUN: self._run_general,
@@ -114,7 +169,7 @@ class ResticTool:
 
             if exit_code != 0:
                 if self.settings.subcommand != SubCommand.EXISTS:
-                    logging.error("restic exited with code %d", exit_code)
+                    self.log(logging.error, "restic exited with code %d", exit_code)
 
                 raise ResticToolException(
                     exit_code, f"restic exited with code {exit_code}"
@@ -144,7 +199,7 @@ class ResticTool:
         volumes.sort()
 
         for volume in volumes:
-            logging.info("Backing up volume '%s'", volume)
+            self.log(logging.debug, "Backing up volume", entity=volume)
             backed_up = True
 
             code, _ = self._run_docker(
@@ -153,11 +208,16 @@ class ResticTool:
                 volumes=self._get_docker_mounts(volume=volume),
             )
 
+            if code == 0:
+                self.log(logging.info, "Successfully backed up volume", entity=volume)
+            else:
+                self.log(logging.error, "Backing up volume failed", entity=volume)
+
             if code > exit_code:
                 exit_code = code
 
         for local_dir in self.configuration.localdirs_to_backup:
-            logging.info("Backing up local directory '%s'", local_dir[1])
+            self.log(logging.debug, "Backing up local directory", entity=local_dir[0])
             backed_up = True
 
             code, _ = self._run_docker(
@@ -166,12 +226,25 @@ class ResticTool:
                 volumes=self._get_docker_mounts(localdir=local_dir),
             )
 
+            if code == 0:
+                self.log(
+                    logging.info,
+                    "Successfully backed up local directory",
+                    entity=local_dir[0],
+                )
+            else:
+                self.log(
+                    logging.error,
+                    "Backing up local directory failed",
+                    entity=local_dir[0],
+                )
+
             if code > exit_code:
                 exit_code = code
 
         if backed_up:
             if self.configuration.is_forget_specified():
-                logging.info("Forgetting expired backups")
+                self.log(logging.debug, "Forgetting expired backups")
 
                 code, _ = self._run_docker(
                     command=self._get_restic_arguments(forget=True),
@@ -180,7 +253,7 @@ class ResticTool:
                 )
 
                 if self.settings.prune:
-                    logging.info("Pruning the repository")
+                    self.log(logging.debug, "Pruning the repository")
 
                     code, _ = self._run_docker(
                         command=self._get_restic_arguments(prune=True),
@@ -191,7 +264,7 @@ class ResticTool:
                 if code > exit_code:
                     exit_code = code
         else:
-            logging.warning("Nothing to back up")
+            self.log(logging.warning, "Nothing to back up")
 
         return 0
 
@@ -220,7 +293,7 @@ class ResticTool:
         )
 
         if code > 0:
-            logging.error("Could not retrieve snapshots")
+            self.log(logging.error, "Could not retrieve snapshots")
             return code
 
         snapshots = json.loads(output)
@@ -236,11 +309,12 @@ class ResticTool:
                 continue
             dest_dir = os.path.dirname(volumes[volume_name])
             dest_last_component = os.path.basename(volumes[volume_name])
-            logging.info(
-                "Restoring volume %s from snapshot %s to %s",
-                volume_name,
+            self.log(
+                logging.debug,
+                "Restoring volume from snapshot %s to %s",
                 snapshot_id,
                 dest_dir,
+                entity=volume_name,
             )
 
             options = ["--cache-dir", "/cache", "restore"]
@@ -278,12 +352,21 @@ class ResticTool:
                     volumes=mounts,
                 )
 
-            if code > 0:
-                logging.error(
-                    "Restoring volume %s from snapshot %s to %s failed",
-                    volume_name,
+            if code == 0:
+                self.log(
+                    logging.info,
+                    "Sucessfully restored from snapshot %s to %s failed",
                     snapshot_id,
                     dest_dir,
+                    entity=volume_name,
+                )
+            else:
+                self.log(
+                    logging.error,
+                    "Restoring from snapshot %s to %s failed",
+                    snapshot_id,
+                    dest_dir,
+                    entity=volume_name,
                 )
 
                 if code > exit_code:
@@ -300,8 +383,15 @@ class ResticTool:
         )
 
         if exit_code == 0:
-            logging.info(
-                "Restore to %s successful",
+            self.log(
+                logging.info,
+                "Restoring to %s successful",
+                self.settings.restore_directory,
+            )
+        else:
+            self.log(
+                logging.error,
+                "Restoring to %s failed",
                 self.settings.restore_directory,
             )
 
@@ -317,14 +407,11 @@ class ResticTool:
         )
 
         if exit_code > 0:
-            logging.warning(
-                "Repository '%s' does not exist or is not reachable",
-                self.configuration.configuration["repository"]["location"],
-            )
+            self.log(logging.warning, "Repository does not exist or is not reachable")
         else:
-            logging.info(
-                "Repository '%s' exists",
-                self.configuration.configuration["repository"]["location"],
+            self.log(
+                logging.info,
+                "Repository exists",
             )
 
         return exit_code
@@ -334,13 +421,15 @@ class ResticTool:
         try:
             bridge = self.client.networks.get(self._BRIDGE_NETWORK_NAME, scope="local")
             self.own_ip_address = bridge.attrs["IPAM"]["Config"][0]["Gateway"]
-            logging.debug(
+            self.log(
+                logging.debug,
                 "Own address on the '%s' network: %s",
                 self._BRIDGE_NETWORK_NAME,
                 self.own_ip_address,
             )
         except (docker.errors.NotFound, KeyError, TypeError, IndexError):
-            logging.warning(
+            self.log(
+                logging.warning,
                 "Network '%s' not recognized, own address won't be added",
                 self._BRIDGE_NETWORK_NAME,
             )
@@ -350,7 +439,7 @@ class ResticTool:
         """Pull the image if requested"""
         if self.settings.force_pull:
             image = self.settings.image.split(":")
-            logging.info("Pulling image %s", self.settings.image)
+            self.log(logging.info, "Pulling image %s", self.settings.image)
             self.client.images.pull(
                 repository=image[0], tag=image[1] if len(image) > 1 else None
             )
@@ -359,10 +448,11 @@ class ResticTool:
         """Create a directory if needed"""
         try:
             if not os.path.exists(path) or not os.path.isdir(path):
-                logging.info("Creating %s directory %s", name, path)
+                self.log(logging.info, "Creating %s directory %s", name, path)
                 os.makedirs(path, mode=0o755)
         except Exception as ex:
-            logging.fatal(
+            self.log(
+                logging.fatal,
                 "Could not create %s directory %s, exiting",
                 name,
                 path,
@@ -467,8 +557,9 @@ class ResticTool:
     ) -> int:
         """Execute docker with the configured options"""
 
-        logging.debug(
-            "Running docker\ncommand: %s\nenvironment: %s\nmounts: %s",
+        self.log(
+            logging.debug,
+            "Running docker command: %s; environment: %s; mounts: %s",
             command,
             env,
             volumes,
