@@ -194,7 +194,7 @@ and the object being backed up.
             syslog:
                 class: logging.handlers.SysLogHandler
                 level: INFO
-                address: /dev/log
+                address: !!python/tuple ["my.syslog.lan",514]
                 facility: daemon
                 formatter: syslog
         formatters:

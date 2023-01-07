@@ -7,7 +7,7 @@ import re
 import os
 
 from schema import SchemaError
-from yaml import safe_load
+from yaml import load, FullLoader
 
 from .configuration_validator import validate
 
@@ -81,7 +81,7 @@ class Configuration:
             If the configuration is invalid.
         """
         try:
-            config = safe_load(stream)
+            config = load(stream, Loader=FullLoader)
         except Exception as ex:
             raise ValueError(
                 "configuration invalid\n" + str(ex.with_traceback(None))
