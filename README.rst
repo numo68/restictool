@@ -199,10 +199,10 @@ and the object being backed up.
                 formatter: syslog
         formatters:
             detailed:
-                format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+                format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
                 datefmt: '%Y-%m-%d %H:%M:%S'
             syslog:
-                format: 'restictool[%(process)d] %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
+                format: 'restictool[%(process)d] %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
 
 Command-line options for restic
 -------------------------------

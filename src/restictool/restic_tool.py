@@ -9,6 +9,7 @@ import os
 import docker
 import docker.errors
 import yaml
+import traceback
 
 from restictool.settings import Settings, SubCommand
 
@@ -72,6 +73,15 @@ class ResticTool:
             },
         )
 
+    def format_exception(self, ex: Exception):
+        """Return the formatted exception with the traceback stripped"""
+        return str(
+            [
+                x.strip().replace("\n", " ")
+                for x in traceback.format_exception(type(ex), ex, None, limit=0)
+            ]
+        )
+
     def setup(self):
         """Reads and validates the configuration and prepares the tool.
 
@@ -82,43 +92,53 @@ class ResticTool:
             the settings specify an unsupported operation.
         """
 
+        # Load the configuration
         self.configuration = Configuration()
 
         try:
             self.configuration.load(self.settings.configuration_stream)
-            if "logging" in self.configuration.configuration:
-                # Set the level if the console handler is present
-                try:
-                    self.configuration.configuration["logging"]["handlers"]["console"][
-                        "level"
-                    ] = self.settings.log_level
-                except Exception:  # pylint: disable=broad-except
-                    pass
-
-                logging.config.dictConfig(self.configuration.configuration["logging"])
-            else:
-                config = yaml.safe_load(
-                    """
-    version: 1
-    root:
-        handlers:
-            - console
-    handlers:
-        console:
-            class: logging.StreamHandler
-            formatter: detailed
-            stream: ext://sys.stderr
-    formatters:
-        detailed:
-            format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s %(message)s'
-            datefmt: '%Y-%m-%d %H:%M:%S'
-"""
-                )
-                config["root"]["level"] = self.settings.log_level
-                logging.config.dictConfig(config)
         except Exception as ex:
-            logging.fatal(ex.with_traceback(None))
-            raise ResticToolException(16, ex.with_traceback(None)) from ex
+            logging.fatal(
+                "Could not load the configuration %s", self.format_exception(ex)
+            )
+            raise ResticToolException(16, self.format_exception(ex)) from ex
+
+        # Configure the logging
+
+        if "logging" in self.configuration.configuration:
+            logging_config = self.configuration.configuration["logging"]
+            # Set the level if the console handler is present
+            try:
+                logging_config["handlers"]["console"]["level"] = self.settings.log_level
+            except Exception:  # pylint: disable=broad-except
+                pass
+        else:
+            logging_config = yaml.safe_load(
+                """
+version: 1
+root:
+    handlers:
+        - console
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: detailed
+        stream: ext://sys.stderr
+formatters:
+    detailed:
+        format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+"""
+            )
+            logging_config["root"]["level"] = self.settings.log_level
+
+        try:
+            logging.config.dictConfig(logging_config)
+        except Exception as ex:  # pylint disable=broad-except
+            logging.error(
+                "Unable to configure logging, falling back to default: %s",
+                self.format_exception(ex),
+            )
 
         if self.settings.subcommand not in [
             SubCommand.CHECK,
@@ -453,11 +473,12 @@ class ResticTool:
         except Exception as ex:
             self.log(
                 logging.fatal,
-                "Could not create %s directory %s, exiting",
+                "Could not create %s directory %s: %s",
                 name,
                 path,
+                self.format_exception(ex),
             )
-            raise ResticToolException(16, ex.with_traceback(None)) from ex
+            raise ResticToolException(16, self.format_exception(ex)) from ex
 
     def _create_directories(self):
         """Create directories"""
