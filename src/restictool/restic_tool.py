@@ -82,6 +82,29 @@ class ResticTool:
             ]
         )
 
+    def configure_default_logging(self):
+        """Configures the default logging"""
+        logging_config = yaml.safe_load(
+            """
+version: 1
+root:
+    handlers:
+        - console
+handlers:
+    console:
+        class: logging.StreamHandler
+        formatter: detailed
+        stream: ext://sys.stderr
+formatters:
+    detailed:
+        format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
+        datefmt: '%Y-%m-%d %H:%M:%S'
+"""
+        )
+
+        logging_config["root"]["level"] = self.settings.log_level
+        logging.config.dictConfig(logging_config)
+
     def setup(self):
         """Reads and validates the configuration and prepares the tool.
 
@@ -112,33 +135,18 @@ class ResticTool:
                 logging_config["handlers"]["console"]["level"] = self.settings.log_level
             except Exception:  # pylint: disable=broad-except
                 pass
-        else:
-            logging_config = yaml.safe_load(
-                """
-version: 1
-root:
-    handlers:
-        - console
-handlers:
-    console:
-        class: logging.StreamHandler
-        formatter: detailed
-        stream: ext://sys.stderr
-formatters:
-    detailed:
-        format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
-        datefmt: '%Y-%m-%d %H:%M:%S'
-"""
-            )
-            logging_config["root"]["level"] = self.settings.log_level
 
-        try:
-            logging.config.dictConfig(logging_config)
-        except Exception as ex:  # pylint disable=broad-except
-            logging.error(
-                "Unable to configure logging, falling back to default: %s",
-                self.format_exception(ex),
-            )
+            try:
+                logging.config.dictConfig(logging_config)
+            except Exception as ex:  # pylint disable=broad-except
+                self.configure_default_logging()
+                self.log(
+                    logging.error,
+                    "Unable to configure logging, falling back to default: %s",
+                    self.format_exception(ex),
+                )
+        else:
+            self.configure_default_logging()
 
         if self.settings.subcommand not in [
             SubCommand.CHECK,
