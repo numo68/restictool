@@ -3,7 +3,7 @@
 
 import argparse
 from .settings import Settings, SubCommand
-
+import pkg_resources
 
 class Arguments:
     """Parses the arguments for the restictool"""
@@ -19,6 +19,10 @@ class Arguments:
     def __init__(self):
         self.tool_arguments = None
         self.restic_arguments = None
+        try:
+            self.version = pkg_resources.get_distribution('restictool').version
+        except:
+            self.version = "?.?"
 
     def parse(self, arguments=None) -> Settings:
         """Parses the restictool arguments
@@ -31,7 +35,7 @@ class Arguments:
         parser = argparse.ArgumentParser(
             prog="restictool",
             formatter_class=argparse.RawDescriptionHelpFormatter,
-            description="A Python wrapper for the dockerized restic tool",
+            description="A Python wrapper for the dockerized restic tool (v"+self.version+")",
             epilog=self._HELP_EPILOG,
         )
 

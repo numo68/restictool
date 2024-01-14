@@ -128,6 +128,7 @@ Repository configuration
         location: "s3:https://somewhere:8010/restic-backups"
         password: "MySecretPassword"
         host: myhost
+        network_from: myvpncontainer
         authentication:
             AWS_ACCESS_KEY_ID: "S3:SomeKeyId"
             AWS_SECRET_ACCESS_KEY: "someSecret"
@@ -142,6 +143,10 @@ supported.
 
 ``host`` defaults to the hostname of the machine the ``restictool`` is
 executed on. It only applies to ``backup``.
+
+The optional ``network_from`` specifies the name of the container to reuse
+the network stack from. This allows using VPN tunnels or other non-standard
+networking. The container has to be already started.
 
 ``authentication`` contains ``restic`` environment variables used to
 authenticate against the target repository. Typical ones are

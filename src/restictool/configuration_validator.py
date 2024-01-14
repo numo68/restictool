@@ -7,6 +7,7 @@ REPOSITORY_SCHEMA = Schema(
         "location": And(str, lambda s: len(s) > 0),
         "password": And(str, lambda s: len(s) > 0),
         Optional("host"): And(str, lambda s: len(s) > 0),
+        Optional("network_from"): And(str, lambda s: len(s) > 0),
         Optional("authentication"): {str: str},
         Optional("extra"): {str: str},
     },

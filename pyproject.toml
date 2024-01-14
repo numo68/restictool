@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restictool"
-version = "0.3.0"
+version = "0.4.0"
 authors = [
   { name="Stanislav Meduna", email="stano@meduna.org" },
 ]
@@ -20,6 +20,7 @@ dependencies = [
     "PyYAML",
     "docker",
     "schema",
+    "setuptools",
 ]
 
 [project.urls]

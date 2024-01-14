@@ -1,3 +1,4 @@
 PyYAML
 docker
 schema
+setuptools

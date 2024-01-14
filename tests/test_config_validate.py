@@ -20,6 +20,7 @@ repository:
   location: "s3:https://somewhere:8010/restic-backups"
   password: "MySecretPassword"
   host: myhost
+  network_from: myvpncontainer
   authentication:
     AWS_ACCESS_KEY_ID: "S3:SomeKeyId"
     AWS_SECRET_ACCESS_KEY: "someSecret"
@@ -65,6 +66,10 @@ localdirs:
         self.assertEqual(
             config["repository"]["host"],
             "myhost",
+        )
+        self.assertEqual(
+            config["repository"]["network_from"],
+            "myvpncontainer",
         )
         self.assertEqual(
             config["repository"]["authentication"]["AWS_ACCESS_KEY_ID"],

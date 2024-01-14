@@ -25,6 +25,8 @@ class Configuration:
         container.
     hostname : str
         Name of the host to be used for the restic backup and restore.
+    network_from: str
+        Optional name of the container to use for networking.
     volumes_to_backup : list
         List of the explicitly specified volumes to backup.
     backup_all_volumes: bool
@@ -60,6 +62,7 @@ class Configuration:
         self.configuration = None
         self.environment_vars = None
         self.hostname = None
+        self.network_from = None
         self.volumes_to_backup = None
         self.backup_all_volumes = False
         self.localdirs_to_backup = None
@@ -103,6 +106,9 @@ class Configuration:
             self.hostname = self.configuration["repository"]["host"]
         else:
             self.hostname = platform.node().lower()
+
+        if "network_from" in self.configuration["repository"]:
+            self.network_from = self.configuration["repository"]["network_from"]
 
         self.volumes_to_backup = []
         self.backup_all_volumes = False

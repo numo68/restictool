@@ -600,7 +600,10 @@ formatters:
             command=command,
             environment=env,
             extra_hosts={self._OWN_HOSTNAME: self.own_ip_address}
-            if self.own_ip_address
+            if self.own_ip_address and self.configuration.network_from is None
+            else None,
+            network_mode="container:" + self.configuration.network_from
+            if self.configuration.network_from
             else None,
             volumes=volumes,
             detach=True,
