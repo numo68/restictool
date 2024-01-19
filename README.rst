@@ -65,13 +65,6 @@ Common arguments
    one of ``backup``, ``restore``, ``snapshots``, ``run``,
    ``dockerdr``, ``exists`` or ``check``
 
-Backup arguments
-----------------
-
-``-p``, ``--prune``
-   prune after backup. This can be costly on cloud storage
-   charging for API calls and downloads
-
 Restore arguments
 -----------------
 
@@ -168,8 +161,9 @@ If provided, the ``--log-level`` command-line option is used to set the level
 for the logger named ``console``, if there is any.
 
 The following extra arguments can be used in the formatters: ``operation``, ``repoLocation``,
-``repoHost``, ``object`` meaning the performed operation, repository location and name,
-and the object being backed up.
+``repoHost``, ``object``, ``elapsed`` meaning the performed operation, repository location and name,
+the object being backed up and the time the operation took. All are strings except
+the elapsed time that is in seconds as float.
 
 **CAUTION**: The ``DEBUG`` level logs sensitive information such as secret keys and passwords.
 
@@ -204,10 +198,10 @@ and the object being backed up.
                 formatter: syslog
         formatters:
             detailed:
-                format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
+                format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s time=%(elapsed).1fs msg=%(message)s'
                 datefmt: '%Y-%m-%d %H:%M:%S'
             syslog:
-                format: 'restictool[%(process)d] %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
+                format: 'restictool[%(process)d] %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s time=%(elapsed).1fs msg=%(message)s'
 
 Command-line options for restic
 -------------------------------
@@ -219,6 +213,8 @@ Command-line options for restic
             - "--insecure-tls"
         forget:
             - ...
+        prune:
+            - ...
         volume:
             - ...
         localdir:
@@ -228,13 +224,18 @@ This section specifies the command-line options to be used when
 executing the ``restic``. ``common`` ones are used for any run,
 ``volume`` ones are added to common ones when backing up a docker
 volume and ``localdir`` ones when backing up a local directory.
-If ``forget`` is present a ``restic forget`` is run after the
-backup is completed with these arguments, optionally eith prune
-if specified. The ``run`` and ``restore`` commands get just the
-``common`` ones.
+The ``run`` and ``restore`` commands get just the ``common`` ones.
 
-If ``'DEFAULT'`` is specified for forget it is expanded to
+If ``forget`` is present a ``restic forget`` is run after the
+backup is completed with these arguments. If ``'DEFAULT'``
+is specified for forget it is expanded to
 ``--keep-daily 7 --keep-weekly 5 --keep-monthly 12``.
+
+If ``prune`` is specified, a ``restic prune`` is run following
+the ``forget``, with the specified arguments (if any). Note that
+this can be costly on a cloud storage charging for API calls
+and downloads.
+
 
 Volume backup specification
 ---------------------------

@@ -88,12 +88,6 @@ class Arguments:
         parser_backup = subparsers.add_parser(
             "backup", help="backup the sources specified in the configuration file"
         )
-        parser_backup.add_argument(
-            "-p",
-            "--prune",
-            action="store_true",
-            help="prune after backup (can be costly on cloud storage)",
-        )
 
         parser_restore = subparsers.add_parser(
             "restore", help="restore a snapshot into the specified directory"
@@ -139,8 +133,6 @@ class Arguments:
         settings.cache_directory = self.tool_arguments["cache"]
         settings.log_level = self.tool_arguments["log_level"].upper()
         settings.quiet = self.tool_arguments["quiet"]
-        if "prune" in self.tool_arguments:
-            settings.prune = self.tool_arguments["prune"]
         if "restore" in self.tool_arguments:
             settings.restore_directory = self.tool_arguments["restore"]
             settings.restore_snapshot = self.tool_arguments["snapshot"]

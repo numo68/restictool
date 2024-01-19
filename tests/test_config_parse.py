@@ -168,6 +168,42 @@ options:
             ],
         )
 
+    def test_options_prune(self):
+        """Test parsing of the prune options"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  prune:
+"""
+        )
+        self.assertEqual(
+            self.config.get_options(prune=True),
+            [
+            ],
+        )
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  prune:
+    - foo
+    - bar
+"""
+        )
+        self.assertEqual(
+            self.config.get_options(prune=True),
+            [
+                "foo",
+                "bar",
+            ],
+        )
+
     def test_options_volume(self):
         """Test parsing of the volume options"""
         self.config.load(self.config_yaml)
@@ -400,6 +436,55 @@ options:
 """
         )
         self.assertTrue(self.config.is_forget_specified())
+
+    def test_is_prune_specified(self):
+        """Test whether to run the prune pass"""
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+"""
+        )
+        self.assertFalse(self.config.is_prune_specified())
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  common:
+    - --foo
+"""
+        )
+        self.assertFalse(self.config.is_prune_specified())
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  prune:
+"""
+        )
+        self.assertTrue(self.config.is_prune_specified())
+        self.assertEqual(self.config.configuration["options"]["prune"], [])
+
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+options:
+  prune:
+    - foo
+    - bar
+"""
+        )
+        self.assertTrue(self.config.is_prune_specified())
+        self.assertEqual(self.config.configuration["options"]["prune"], ["foo", "bar"])
 
     def test_localdirs_tilde_expansion(self):
         """Test getting the list of local directories to backup"""

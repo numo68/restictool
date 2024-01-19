@@ -130,6 +130,9 @@ class Configuration:
                     else ldir["path"].replace("~", os.environ["HOME"], 1)
                 )
                 self.localdirs_to_backup.append((ldir["name"], dir_path))
+        
+        if self.is_prune_specified() and self.configuration["options"]["prune"] is None:
+            self.configuration["options"]["prune"] = []
 
     def create_env_vars(self) -> None:
         """Retrieves the environment variables the restic is to be executed with.
@@ -162,7 +165,7 @@ class Configuration:
         ]
 
     def get_options(
-        self, volume: str = None, localdir: str = None, forget: bool = False
+        self, volume: str = None, localdir: str = None, forget: bool = False, prune: bool = False
     ) -> list:
         """Retrieves the options the restic is to be executed with.
 
@@ -177,6 +180,8 @@ class Configuration:
             The local directory being backed up, by default None.
         forget : bool, optional
             Return the options for the ``forget`` pass after the backup, by default False.
+        prune : bool, optional
+            Return the options for the ``prune`` pass after the backup, by default False.
 
         Returns
         -------
@@ -195,6 +200,8 @@ class Configuration:
                         options.extend(self._FORGET_DEFAULT)
                     else:
                         options.append(opt)
+            if prune and "prune" in self.configuration["options"]:
+                options.extend(self.configuration["options"]["prune"])
             if volume and "volume" in self.configuration["options"]:
                 options.extend(self.configuration["options"]["volume"])
             if localdir and "localdir" in self.configuration["options"]:
@@ -270,4 +277,17 @@ class Configuration:
         return (
             "options" in self.configuration
             and "forget" in self.configuration["options"]
+        )
+
+    def is_prune_specified(self) -> bool:
+        """Check whether a ``prune`` should be run after finishing the backup.
+
+        Returns
+        -------
+        bool
+            The configuration specifies the settings for a ``prune`` pass.
+        """
+        return (
+            "options" in self.configuration
+            and "prune" in self.configuration["options"]
         )

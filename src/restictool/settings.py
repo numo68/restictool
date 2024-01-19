@@ -37,9 +37,6 @@ class Settings:
         An absolute path to a cache directory.
     log_level : str
         Logging level that can be parsed by ``logging.basicConfig``.
-    prune : bool
-        True if the ``forget`` should be followed by pruning.
-        Only read when backing up and ``forget`` parameters are specified.
     quiet : bool
         Silence the ``restic`` by passing it a ``--quiet`` argument.
     restore_snapshot : str
@@ -71,7 +68,6 @@ class Settings:
         self.configuration_stream = None
         self.cache_directory = self.DEFAULT_CACHE_DIR
         self.log_level = "WARNING"
-        self.prune = False
         self.quiet = False
         self.restore_snapshot = None
         self.restore_directory = None

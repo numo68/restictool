@@ -10,6 +10,7 @@ import docker
 import docker.errors
 import yaml
 import traceback
+import time
 
 from restictool.settings import Settings, SubCommand
 
@@ -49,7 +50,7 @@ class ResticTool:
         self.client = None
         self.own_ip_address = None
 
-    def log(self, log_function, *args, entity=None):
+    def log(self, log_function, *args, entity=None, elapsed=None):
         """Log the message, filling out the extras.
 
         Parameters
@@ -60,6 +61,8 @@ class ResticTool:
             Arguments for the logging function
         entity : str | None
             Volume or local directory name to backup or restore, if known
+        elapsed : float | None
+            Elapsed time of the operation, if known
         """
         log_function(
             *args,
@@ -70,6 +73,7 @@ class ResticTool:
                 ],
                 "repoHost": self.configuration.configuration["repository"]["host"],
                 "object": entity if entity is not None else "(None)",
+                "elapsed": elapsed if elapsed is not None else 0.0,
             },
         )
 
@@ -229,6 +233,7 @@ formatters:
         for volume in volumes:
             self.log(logging.debug, "Backing up volume", entity=volume)
             backed_up = True
+            start_time = time.monotonic()
 
             code, _ = self._run_docker(
                 command=self._get_restic_arguments(volume=volume),
@@ -237,9 +242,9 @@ formatters:
             )
 
             if code == 0:
-                self.log(logging.info, "Successfully backed up volume", entity=volume)
+                self.log(logging.info, "Successfully backed up volume", entity=volume, elapsed=time.monotonic() - start_time)
             else:
-                self.log(logging.error, "Backing up volume failed", entity=volume)
+                self.log(logging.error, "Backing up volume failed", entity=volume, elapsed=time.monotonic() - start_time)
 
             if code > exit_code:
                 exit_code = code
@@ -247,6 +252,7 @@ formatters:
         for local_dir in self.configuration.localdirs_to_backup:
             self.log(logging.debug, "Backing up local directory", entity=local_dir[0])
             backed_up = True
+            start_time = time.monotonic()
 
             code, _ = self._run_docker(
                 command=self._get_restic_arguments(localdir_name=local_dir[0]),
@@ -259,12 +265,14 @@ formatters:
                     logging.info,
                     "Successfully backed up local directory",
                     entity=local_dir[0],
+                    elapsed=time.monotonic() - start_time,
                 )
             else:
                 self.log(
                     logging.error,
                     "Backing up local directory failed",
                     entity=local_dir[0],
+                    elapsed=time.monotonic() - start_time,
                 )
 
             if code > exit_code:
@@ -273,6 +281,7 @@ formatters:
         if backed_up:
             if self.configuration.is_forget_specified():
                 self.log(logging.debug, "Forgetting expired backups")
+                start_time = time.monotonic()
 
                 code, _ = self._run_docker(
                     command=self._get_restic_arguments(forget=True),
@@ -280,13 +289,43 @@ formatters:
                     volumes=self._get_docker_mounts(),
                 )
 
-                if self.settings.prune:
-                    self.log(logging.debug, "Pruning the repository")
+                if code == 0:
+                    self.log(
+                        logging.info,
+                        "Successfully run forget policy",
+                        elapsed=time.monotonic() - start_time,
+                    )
+                else:
+                    self.log(
+                        logging.error,
+                        "Running forget policy failed",
+                        elapsed=time.monotonic() - start_time,
+                    )
 
-                    code, _ = self._run_docker(
-                        command=self._get_restic_arguments(prune=True),
-                        env=self.configuration.environment_vars,
-                        volumes=self._get_docker_mounts(),
+                if code > exit_code:
+                    exit_code = code
+
+            if self.configuration.is_prune_specified():
+                self.log(logging.debug, "Pruning the repository")
+                start_time = time.monotonic()
+
+                code, _ = self._run_docker(
+                    command=self._get_restic_arguments(prune=True),
+                    env=self.configuration.environment_vars,
+                    volumes=self._get_docker_mounts(),
+                )
+
+                if code == 0:
+                    self.log(
+                        logging.info,
+                        "Successfully pruned the snapshots",
+                        elapsed=time.monotonic() - start_time,
+                    )
+                else:
+                    self.log(
+                        logging.error,
+                        "Pruning the snapshots failed",
+                        elapsed=time.monotonic() - start_time,
                     )
 
                 if code > exit_code:
@@ -562,7 +601,7 @@ formatters:
                     options.append(f"/localdir/{localdir_name}")
 
             options.extend(
-                self.configuration.get_options(volume, localdir_name, forget)
+                self.configuration.get_options(volume, localdir_name, forget, prune)
             )
 
             if not prune:

@@ -33,6 +33,9 @@ options:
   forget:
     - --keep-daily
     - 7
+  prune:
+    - --max-unused
+    - '200M'
   volume:
     - --volume-opt
   localdir:
@@ -148,7 +151,7 @@ localdirs:
 
     def test_backup_options_volume(self):
         """Test docker options for volume backup"""
-        tool = self.prepare_tool(["backup", "-p", "-q"])
+        tool = self.prepare_tool(["backup", "-q"])
         options = tool._get_restic_arguments(volume="my_volume")
         self.assertEqual(
             options,
@@ -169,7 +172,7 @@ localdirs:
 
     def test_backup_options_localdir(self):
         """Test docker options for volume backup"""
-        tool = self.prepare_tool(["backup", "-p"])
+        tool = self.prepare_tool(["backup"])
         options = tool._get_restic_arguments(localdir_name="my_tag")
         self.assertEqual(
             options,
@@ -189,7 +192,7 @@ localdirs:
 
     def test_backup_options_forget(self):
         """Test docker options for forget"""
-        tool = self.prepare_tool(["backup", "-p", "--my-arg1", "--my-arg2"])
+        tool = self.prepare_tool(["backup", "--my-arg1", "--my-arg2"])
         options = tool._get_restic_arguments(forget=True)
         self.assertEqual(
             options,
@@ -209,7 +212,7 @@ localdirs:
 
     def test_backup_options_prune(self):
         """Test docker options for prune"""
-        tool = self.prepare_tool(["backup", "-p", "--my-arg1", "--my-arg2"])
+        tool = self.prepare_tool(["backup", "--my-arg1", "--my-arg2"])
         options = tool._get_restic_arguments(prune=True)
         self.assertEqual(
             options,
@@ -218,6 +221,8 @@ localdirs:
                 "/cache",
                 "prune",
                 "--insecure-tls",
+                "--max-unused",
+                "200M",
                 "--my-arg1",
                 "--my-arg2",
             ],

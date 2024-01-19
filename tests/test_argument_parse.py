@@ -167,7 +167,6 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertFalse(settings.force_pull)
         self.assertEqual(settings.cache_directory, Settings.DEFAULT_CACHE_DIR)
         self.assertEqual(settings.log_level, "WARNING")
-        self.assertFalse(settings.prune)
         self.assertFalse(settings.quiet)
         self.assertIsNone(settings.restore_directory)
 
@@ -185,7 +184,6 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 "/tmp/restore",
             ]
         )
-        settings = self.parser.to_settings()
 
         settings = self.parser.to_settings()
         self.assertEqual(settings.subcommand, SubCommand.RESTORE)
@@ -193,13 +191,11 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         self.assertTrue(settings.force_pull)
         self.assertEqual(settings.cache_directory, "/tmp/cache")
         self.assertEqual(settings.log_level, "DEBUG")
-        self.assertFalse(settings.prune)
         self.assertTrue(settings.quiet)
         self.assertEqual(settings.restore_directory, "/tmp/restore")
         self.assertEqual(settings.restore_snapshot, "latest")
 
-        self.parser.parse(["backup", "-p"])
+        self.parser.parse(["backup"])
         settings = self.parser.to_settings()
 
         self.assertEqual(settings.subcommand, SubCommand.BACKUP)
-        self.assertTrue(settings.prune)

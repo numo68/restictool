@@ -1,6 +1,6 @@
 """Validates the configuration schema"""
 
-from schema import Schema, And, Optional, Use
+from schema import Schema, And, Or, Optional, Use
 
 REPOSITORY_SCHEMA = Schema(
     {
@@ -17,6 +17,7 @@ OPTIONS_SCHEMA = Schema(
     {
         Optional("common"): [And(Use(str), lambda s: len(s) > 0)],
         Optional("forget"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("prune"): Or([And(Use(str), lambda s: len(s) > 0)], None),
         Optional("volume"): [And(Use(str), lambda s: len(s) > 0)],
         Optional("localdir"): [And(Use(str), lambda s: len(s) > 0)],
     },

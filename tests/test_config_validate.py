@@ -36,6 +36,7 @@ options:
     - 5
     - --keep-monthly
     - 12
+  prune:
   volume:
     - --volume-opt
   localdir:
@@ -82,6 +83,10 @@ localdirs:
         self.assertEqual(
             config["options"]["forget"][0],
             "--keep-daily",
+        )
+        self.assertEqual(
+            config["options"]["prune"],
+            None,
         )
         self.assertEqual(
             config["options"]["volume"][0],
