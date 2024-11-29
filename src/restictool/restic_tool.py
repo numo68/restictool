@@ -7,7 +7,6 @@ import logging
 import logging.config
 import os
 import docker
-import docker.errors
 import yaml
 import traceback
 import time

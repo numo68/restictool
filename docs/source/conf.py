@@ -11,7 +11,7 @@ import os, sys
 project = "Restic Tool"
 copyright = "2024, Stanislav Meduna"
 author = "Stanislav Meduna"
-release = "0.5.0"
+release = "0.5.1"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
