@@ -3,7 +3,7 @@
 
 import argparse
 from .settings import Settings, SubCommand
-import pkg_resources
+from importlib.metadata import version 
 
 class Arguments:
     """Parses the arguments for the restictool"""
@@ -20,7 +20,7 @@ class Arguments:
         self.tool_arguments = None
         self.restic_arguments = None
         try:
-            self.version = pkg_resources.get_distribution('restictool').version
+            self.version = version('restictool')
         except:
             self.version = "?.?"
 
