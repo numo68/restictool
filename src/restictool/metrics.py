@@ -4,6 +4,7 @@ Transform the restic metrics from the json snapshot output to prometheus metrics
 Only works for restic >= 0.17.0
 """
 
+import os
 from datetime import datetime
 from dateutil import parser
 from .configuration_parser import Configuration
@@ -15,6 +16,11 @@ class Metrics:
     """
 
     def __init__(self, configuration: Configuration):
+        """_summary_
+
+        Args:
+            configuration (Configuration): Restictool configuration
+        """
         self.configuration = configuration
         self.clear()
 
@@ -27,7 +33,8 @@ class Metrics:
         self.files = None
         self.size = None
 
-    def header(self) -> str:
+    @staticmethod
+    def header() -> str:
         """Returns the header of the metrics text format"""
 
         return """# HELP restictool_backup_timestamp_seconds Time the backup was started.
@@ -41,9 +48,11 @@ class Metrics:
 
 # HELP restictool_backup_size_bytes Total size of the files in the snapshot.
 # TYPE restictool_backup_size_bytes gauge
+
 """
 
-    def time_string_to_time_stamp(self, time: str) -> float:
+    @staticmethod
+    def time_string_to_time_stamp(time: str) -> float:
         """Convert the ISO date to seconds from epoch
 
         Unfortunately the dateutil.fromisoformat() cannot handle nanoseconds
@@ -56,6 +65,19 @@ class Metrics:
         """
         # return int(datetime.fromisoformat(time.split('.')[0].split('Z')[0] + "+00:00").timestamp())
         return parser.isoparse(time).timestamp()
+
+    @staticmethod
+    def escape_label_value(s: str) -> str:
+        """Escape label value
+
+        Args:
+            s (str): raw value
+
+        Returns:
+            str: Value escaped according to prometheus text exposition rules
+        """
+        return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", r"\n")
+
 
     def set(self, snapshot: dict):
         """Set the metrics from a snapshot JSON
@@ -84,17 +106,6 @@ class Metrics:
         except KeyError:
             pass
 
-    def escape_label_value(self, s: str) -> str:
-        """Escape label value
-
-        Args:
-            s (str): raw value
-
-        Returns:
-            str: Value escaped according to prometheus text exposition rules
-        """
-        return s.replace("\\", "\\\\").replace('"', '\\"').replace("\n", r"\n")
-
     def labels(self) -> str:
         """Generate the metric labels
 
@@ -121,3 +132,28 @@ class Metrics:
         ret += "\n"
 
         return ret
+
+
+    @classmethod
+    def write_to_file(cls, configuration: Configuration, snapshots: list, path: str):
+        """Atomically write the metrics to the file
+
+        Args:
+            configuration (Configuration): Restictool configuration
+            snapshots (list): a list of snapshots
+            path (str): path of the destination file
+        """
+
+        out_str = Metrics.header()
+
+        for snapshot in snapshots:
+            metric = cls(configuration)
+            metric.set(snapshot)
+            out_str += metric.metric_lines()
+
+        tmp_file_path = path + ".new"
+
+        with open(tmp_file_path, "w") as f:
+            f.write(out_str)
+        
+        os.rename(tmp_file_path, path)

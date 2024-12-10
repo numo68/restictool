@@ -3,12 +3,14 @@
 import io
 import unittest
 import json
+import os
+from pyfakefs import fake_filesystem_unittest
 
 from restictool.configuration_parser import Configuration
 from restictool.metrics import Metrics
 
 
-class TestMetrics(unittest.TestCase):
+class TestMetrics(fake_filesystem_unittest.TestCase):
     """Test argument parsing"""
 
     def setUp(self):
@@ -21,6 +23,9 @@ repository:
         self.config = Configuration()
         config_stream = io.StringIO(self.config_yaml)
         config_stream.seek(0, io.SEEK_SET)
+
+        self.out_dir = "/var/local/lib/metrics"
+        self.out_file = os.path.join(self.out_dir, "restictool.prom")
 
         self.config.load(config_stream)
         self.metrics = Metrics(self.config)
@@ -72,9 +77,13 @@ repository:
 """
         )
 
+        self.setUpPyfakefs()
+        os.makedirs(self.out_dir)
+
+
     def test_headers(self):
         """Test headers"""
-        lines = self.metrics.header().splitlines()
+        lines = Metrics.header().splitlines()
         self.assertTrue(
             lines[0].startswith("# HELP restictool_backup_timestamp_seconds")
         )
@@ -89,18 +98,18 @@ repository:
         self.assertEqual(lines[10], "# TYPE restictool_backup_size_bytes gauge")
 
     def test_escape(self):
-        self.assertEqual(self.metrics.escape_label_value('abc"d'), r"abc\"d")
-        self.assertEqual(self.metrics.escape_label_value("abc\nd"), r"abc\nd")
-        self.assertEqual(self.metrics.escape_label_value("abc\\d"), r"abc\\d")
+        self.assertEqual(Metrics.escape_label_value('abc"d'), r"abc\"d")
+        self.assertEqual(Metrics.escape_label_value("abc\nd"), r"abc\nd")
+        self.assertEqual(Metrics.escape_label_value("abc\\d"), r"abc\\d")
 
     def test_time_parse(self):
         self.assertAlmostEqual(
-            self.metrics.time_string_to_time_stamp("2024-12-10T19:43:56.123456789Z"),
+            Metrics.time_string_to_time_stamp("2024-12-10T19:43:56.123456789Z"),
             1733859836.123456,
             places=6,
         )
         self.assertAlmostEqual(
-            self.metrics.time_string_to_time_stamp("2024-12-10T19:43:56Z"), 1733859836.0
+            Metrics.time_string_to_time_stamp("2024-12-10T19:43:56Z"), 1733859836.0
         )
 
     def test_set_full(self):
@@ -181,4 +190,34 @@ repository:
         self.assertEqual(
             lines[0],
             'restictool_backup_timestamp_seconds{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vs\\"co\\nde"} 1733832700',
+        )
+
+    def test_file_write(self):
+        Metrics.write_to_file(self.config, self.snapshots, self.out_file)
+
+        with open(self.out_file, "r") as f:
+            lines = f.read().splitlines()
+
+        self.assertEqual(len(lines), 19)
+
+        self.assertEqual(
+            lines[12],
+            'restictool_backup_timestamp_seconds{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vscode"} 1733832700',
+        )
+
+        self.assertEqual(
+            lines[14],
+            'restictool_backup_timestamp_seconds{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vscode"} 1733832768',
+        )
+        self.assertEqual(
+            lines[15],
+            'restictool_backup_duration_seconds{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vscode"} 1.2',
+        )
+        self.assertEqual(
+            lines[16],
+            'restictool_backup_files{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vscode"} 1131',
+        )
+        self.assertEqual(
+            lines[17],
+            'restictool_backup_size_bytes{hostname="mbair",repository="s3:https://somewhere:8010/restic-backups",path="/volume/vscode"} 369787002',
         )
