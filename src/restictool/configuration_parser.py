@@ -66,6 +66,7 @@ class Configuration:
         self.volumes_to_backup = None
         self.backup_all_volumes = False
         self.localdirs_to_backup = None
+        self.metrics_path = None
 
     def load(self, stream, close=True) -> None:
         """Loads, parses and validates the configuration from a stream.
@@ -110,6 +111,16 @@ class Configuration:
         if "network_from" in self.configuration["repository"]:
             self.network_from = self.configuration["repository"]["network_from"]
 
+        if "metrics" in self.configuration:
+            self.metrics_path = os.path.join(
+                self.configuration["metrics"]["directory"], "restictool"
+            )
+
+            if "suffix" in self.configuration["metrics"]:
+                self.metrics_path += "-" + self.configuration["metrics"]["suffix"]
+
+            self.metrics_path += ".prom"
+
         self.volumes_to_backup = []
         self.backup_all_volumes = False
 
@@ -130,7 +141,7 @@ class Configuration:
                     else ldir["path"].replace("~", os.environ["HOME"], 1)
                 )
                 self.localdirs_to_backup.append((ldir["name"], dir_path))
-        
+
         if self.is_prune_specified() and self.configuration["options"]["prune"] is None:
             self.configuration["options"]["prune"] = []
 
@@ -165,7 +176,11 @@ class Configuration:
         ]
 
     def get_options(
-        self, volume: str = None, localdir: str = None, forget: bool = False, prune: bool = False
+        self,
+        volume: str = None,
+        localdir: str = None,
+        forget: bool = False,
+        prune: bool = False,
     ) -> list:
         """Retrieves the options the restic is to be executed with.
 
@@ -288,6 +303,19 @@ class Configuration:
             The configuration specifies the settings for a ``prune`` pass.
         """
         return (
-            "options" in self.configuration
-            and "prune" in self.configuration["options"]
+            "options" in self.configuration and "prune" in self.configuration["options"]
+        )
+
+    def metrics_dir_exists(self) -> bool:
+        """Checks whether the metrics directory exists
+
+        Returns:
+            bool: The configuration specifies the metrics directory and it exists.
+        """
+        return (
+            "metrics" in self.configuration
+            and os.path.exists(self.configuration["metrics"]["directory"])
+            and os.path.isdir(
+                os.path.realpath(self.configuration["metrics"]["directory"])
+            )
         )

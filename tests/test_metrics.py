@@ -19,13 +19,12 @@ repository:
   location: "s3:https://somewhere:8010/restic-backups"
   host: myhost
   password: "MySecretPassword"
+metrics:
+  directory: "/var/local/lib/metrics"
 """
         self.config = Configuration()
         config_stream = io.StringIO(self.config_yaml)
         config_stream.seek(0, io.SEEK_SET)
-
-        self.out_dir = "/var/local/lib/metrics"
-        self.out_file = os.path.join(self.out_dir, "restictool.prom")
 
         self.config.load(config_stream)
         self.metrics = Metrics(self.config)
@@ -78,7 +77,7 @@ repository:
         )
 
         self.setUpPyfakefs()
-        os.makedirs(self.out_dir)
+        os.makedirs(self.config.configuration["metrics"]["directory"])
 
 
     def test_headers(self):
@@ -193,9 +192,11 @@ repository:
         )
 
     def test_file_write(self):
-        Metrics.write_to_file(self.config, self.snapshots, self.out_file)
+        self.assertTrue(self.config.metrics_dir_exists())
 
-        with open(self.out_file, "r") as f:
+        Metrics.write_to_file(self.config, self.snapshots)
+
+        with open(self.config.metrics_path, "r") as f:
             lines = f.read().splitlines()
 
         self.assertEqual(len(lines), 19)

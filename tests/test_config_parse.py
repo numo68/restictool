@@ -23,6 +23,9 @@ repository:
     AWS_SECRET_ACCESS_KEY: "someSecret"
   extra:
     RESTIC_PACK_SIZE: "64"
+metrics:
+  directory: "/tmp/foo"
+  suffix: "bar"
 options:
   common:
     - --insecure-tls
@@ -504,3 +507,29 @@ localdirs:
             self.config.localdirs_to_backup,
             [("tag1", "foo"), ("tag2", os.path.join(os.environ["HOME"], "foo"))],
         )
+
+    def test_metrics(self):
+        self.config.load(self.config_yaml)
+        self.assertEqual(self.config.metrics_path, "/tmp/foo/restictool-bar.prom")
+
+    def test_metrics_no_suffix(self):
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+metrics:
+  directory: "/tmp/foo"
+"""
+        )
+        self.assertEqual(self.config.metrics_path, "/tmp/foo/restictool.prom")
+
+    def test_no_metrics(self):
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+"""
+        )
+        self.assertIsNone(self.config.metrics_path)

@@ -26,6 +26,9 @@ repository:
     AWS_SECRET_ACCESS_KEY: "someSecret"
   extra:
     RESTIC_PACK_SIZE: "64"
+metrics:
+  directory: "/foo"
+  suffix: "s3"
 options:
   common:
     - --insecure-tls
@@ -75,6 +78,14 @@ localdirs:
         self.assertEqual(
             config["repository"]["authentication"]["AWS_ACCESS_KEY_ID"],
             "S3:SomeKeyId",
+        )
+        self.assertEqual(
+            config["metrics"]["directory"],
+            "/foo",
+        )
+        self.assertEqual(
+            config["metrics"]["suffix"],
+            "s3",
         )
         self.assertEqual(
             config["options"]["common"][0],
@@ -133,18 +144,18 @@ repository:
             )
         )
 
-    with pytest.raises(SchemaError, match="spurious"):
-        validate(
-            yaml.safe_load(
-                """
-repository:
-    location: "s3:https://somewhere:8010/restic-backups"
-    password: "MySecretPassword"
-spurious:
-    - ''
-"""
+        with pytest.raises(SchemaError, match="spurious"):
+            validate(
+                yaml.safe_load(
+                    """
+    repository:
+        location: "s3:https://somewhere:8010/restic-backups"
+        password: "MySecretPassword"
+    spurious:
+        - ''
+    """
+                )
             )
-        )
 
         with pytest.raises(SchemaError, match="repository"):
             validate(yaml.safe_load("foo:\n"))
@@ -429,6 +440,61 @@ localdirs:
     - name: tag
       path: mypath
       options:
+"""
+                )
+            )
+
+    def test_validate_metrics(self):
+        """Validate metrics part more thoroughly"""
+
+        with pytest.raises(SchemaError, match="metrics"):
+            validate(
+                yaml.safe_load(
+                    """
+repository:
+    location: "s3:https://somewhere:8010/restic-backups"
+    password: "MySecretPassword"
+metrics:
+"""
+                )
+            )
+
+        with pytest.raises(SchemaError, match="metrics"):
+            validate(
+                yaml.safe_load(
+                    """
+repository:
+    location: "s3:https://somewhere:8010/restic-backups"
+    password: "MySecretPassword"
+metrics:
+    suffix: "s3"
+"""
+                )
+            )
+
+        self.assertTrue(
+            validate(
+                yaml.safe_load(
+                    """
+repository:
+    location: "s3:https://somewhere:8010/restic-backups"
+    password: "MySecretPassword"
+metrics:
+    directory: "/foo"
+"""
+                )
+            )
+        )
+
+        with pytest.raises(SchemaError, match="metrics"):
+            validate(
+                yaml.safe_load(
+                    """
+repository:
+    location: "s3:https://somewhere:8010/restic-backups"
+    password: "MySecretPassword"
+metrics:
+    directory: 1
 """
                 )
             )

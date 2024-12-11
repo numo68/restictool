@@ -11,9 +11,9 @@ import yaml
 import traceback
 import time
 
-from restictool.settings import Settings, SubCommand
-
+from .settings import Settings, SubCommand
 from .configuration_parser import Configuration
+from .metrics import Metrics
 
 
 class ResticToolException(Exception):
@@ -241,9 +241,19 @@ formatters:
             )
 
             if code == 0:
-                self.log(logging.info, "Successfully backed up volume", entity=volume, elapsed=time.monotonic() - start_time)
+                self.log(
+                    logging.info,
+                    "Successfully backed up volume",
+                    entity=volume,
+                    elapsed=time.monotonic() - start_time,
+                )
             else:
-                self.log(logging.error, "Backing up volume failed", entity=volume, elapsed=time.monotonic() - start_time)
+                self.log(
+                    logging.error,
+                    "Backing up volume failed",
+                    entity=volume,
+                    elapsed=time.monotonic() - start_time,
+                )
 
             if code > exit_code:
                 exit_code = code
@@ -329,6 +339,66 @@ formatters:
 
                 if code > exit_code:
                     exit_code = code
+
+            if self.configuration.metrics_path:
+                self.log(logging.debug, "Generating the metrics")
+                start_time = time.monotonic()
+
+                if self.configuration.metrics_dir_exists():
+                    options = ["--cache-dir", "/cache", "snapshots"]
+                    options.extend(self.configuration.get_options())
+                    options.extend(
+                        [
+                            "--latest=1",
+                            "--host=" + self.configuration.hostname,
+                            "--json",
+                        ]
+                    )
+
+                    code, output = self._run_docker(
+                        options,
+                        env=self.configuration.environment_vars,
+                        volumes=self._get_docker_mounts(),
+                        quiet=True,
+                    )
+
+                    if code == 0:
+                        try:
+                            snapshots = json.loads(output)
+                            Metrics.write_to_file(self.configuration, snapshots)
+
+                            self.log(
+                                logging.info,
+                                "Successfully generated the metrics",
+                                elapsed=time.monotonic() - start_time,
+                            )
+                        except Exception as ex:  # pylint disable=broad-except
+                            self.log(
+                                logging.error,
+                                "Writing the metrics failed: %s",
+                                self.format_exception(ex),
+                                elapsed=time.monotonic() - start_time,
+                            )
+                            
+                    else:
+                        self.log(
+                            logging.error,
+                            "Querying the snapshots failed",
+                            elapsed=time.monotonic() - start_time,
+                        )
+
+                    if code > exit_code:
+                        exit_code = code
+                else:
+                    self.log(
+                        logging.error,
+                        "Metrics directory does not exist or is not a directory, no metrics generated",
+                        elapsed=time.monotonic() - start_time,
+                    )
+
+                if code > exit_code:
+                    exit_code = code
+
         else:
             self.log(logging.warning, "Nothing to back up")
 
@@ -637,12 +707,16 @@ formatters:
             entrypoint=entrypoint,
             command=command,
             environment=env,
-            extra_hosts={self._OWN_HOSTNAME: self.own_ip_address}
-            if self.own_ip_address and self.configuration.network_from is None
-            else None,
-            network_mode="container:" + self.configuration.network_from
-            if self.configuration.network_from
-            else None,
+            extra_hosts=(
+                {self._OWN_HOSTNAME: self.own_ip_address}
+                if self.own_ip_address and self.configuration.network_from is None
+                else None
+            ),
+            network_mode=(
+                "container:" + self.configuration.network_from
+                if self.configuration.network_from
+                else None
+            ),
             volumes=volumes,
             detach=True,
         )

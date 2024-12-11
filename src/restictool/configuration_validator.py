@@ -13,6 +13,13 @@ REPOSITORY_SCHEMA = Schema(
     },
 )
 
+METRICS_SCHEMA = Schema(
+    {
+        "directory": And(str, lambda s: len(s) > 0),
+        Optional("suffix"): And(str, lambda s: len(s) > 0),
+    },
+)
+
 OPTIONS_SCHEMA = Schema(
     {
         Optional("common"): [And(Use(str), lambda s: len(s) > 0)],
@@ -42,6 +49,7 @@ SCHEMA = Schema(
     {
         "repository": REPOSITORY_SCHEMA,
         Optional("logging"): dict,
+        Optional("metrics"): METRICS_SCHEMA,
         Optional("options"): OPTIONS_SCHEMA,
         Optional("volumes"): [VOLUME_SCHEMA],
         Optional("localdirs"): [LOCALDIR_SCHEMA],

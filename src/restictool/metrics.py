@@ -135,7 +135,7 @@ class Metrics:
 
 
     @classmethod
-    def write_to_file(cls, configuration: Configuration, snapshots: list, path: str):
+    def write_to_file(cls, configuration: Configuration, snapshots: list):
         """Atomically write the metrics to the file
 
         Args:
@@ -151,9 +151,9 @@ class Metrics:
             metric.set(snapshot)
             out_str += metric.metric_lines()
 
-        tmp_file_path = path + ".new"
+        tmp_file_path = configuration.metrics_path + ".new"
 
         with open(tmp_file_path, "w") as f:
             f.write(out_str)
         
-        os.rename(tmp_file_path, path)
+        os.rename(tmp_file_path, configuration.metrics_path)
