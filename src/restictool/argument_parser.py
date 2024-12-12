@@ -3,7 +3,6 @@
 
 import argparse
 from .settings import Settings, SubCommand
-from importlib.metadata import version 
 
 class Arguments:
     """Parses the arguments for the restictool"""
@@ -19,10 +18,7 @@ class Arguments:
     def __init__(self):
         self.tool_arguments = None
         self.restic_arguments = None
-        try:
-            self.version = version('restictool')
-        except:
-            self.version = "?.?"
+        self.version = "0.6.1"
 
     def parse(self, arguments=None) -> Settings:
         """Parses the restictool arguments

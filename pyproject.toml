@@ -4,13 +4,13 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restictool"
-version = "0.6.0"
+version = "0.6.1"
 authors = [
   { name="Stanislav Meduna", email="stano@meduna.org" },
 ]
 description = "A python wrapper for a dockerized restic tool"
 readme = "README.rst"
-requires-python = ">=3.7"
+requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
@@ -41,4 +41,25 @@ pythonpath = [
 ]
 testpaths = [
     "tests",
+]
+
+[tool.bumpver]
+current_version = "0.6.1"
+version_pattern = "MAJOR.MINOR.PATCH"
+commit_message = "bump version {old_version} -> {new_version}"
+tag_message = "{new_version}"
+tag_scope = "default"
+pre_commit_hook = ""
+post_commit_hook = ""
+commit = false
+tag = false
+push = false
+
+[tool.bumpver.file_patterns]
+"pyproject.toml" = [
+    'current_version = "{version}"',
+    'version = "{version}"',
+]
+"src/restictool/argument_parser.py" = [
+    'self.version = "{version}"',
 ]
