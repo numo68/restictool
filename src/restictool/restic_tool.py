@@ -364,8 +364,9 @@ formatters:
 
                     if code == 0:
                         try:
-                            snapshots = json.loads(output)
-                            Metrics.write_to_file(self.configuration, snapshots)
+                            metrics = Metrics(self.configuration)
+                            metrics.set_snapshots(json.loads(output))
+                            metrics.write_to_file()
 
                             self.log(
                                 logging.info,
