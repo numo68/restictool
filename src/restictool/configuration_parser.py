@@ -29,9 +29,12 @@ class Configuration:
         Optional name of the container to use for networking.
     volumes_to_backup : list
         List of the explicitly specified volumes to backup.
+    volumes_to_exclude : list
+        List of the volumes to exclude.
     backup_all_volumes: bool
-        If the list of volumes contains a ``*``, volumes_to_backup is empty
-        and this attribute is True.
+        If the list of volumes contains a ``*``, volumes_to_backup is empty,
+        volumes_to_exclude contains the exclusion list, and this attribute
+        is True.
     localdirs_to_backup : list
         List of the explicitly specified local directories to backup.
         Items are the (name, path) tuples.
@@ -63,9 +66,10 @@ class Configuration:
         self.environment_vars = None
         self.hostname = None
         self.network_from = None
-        self.volumes_to_backup = None
         self.backup_all_volumes = False
-        self.localdirs_to_backup = None
+        self.volumes_to_backup = []
+        self.volumes_to_exclude = []
+        self.localdirs_to_backup = []
         self.metrics_path = None
 
     def load(self, stream, close=True) -> None:
@@ -129,6 +133,8 @@ class Configuration:
                 if vol["name"] == "*":
                     self.volumes_to_backup.clear()
                     self.backup_all_volumes = True
+                    if "exclude" in vol:
+                        self.volumes_to_exclude = vol["exclude"]
                     break
                 self.volumes_to_backup.append(vol["name"])
 
@@ -277,7 +283,10 @@ class Configuration:
         """
 
         if self.backup_all_volumes:
-            return not self._ANONYMOUS_VOLUME_REGEX.match(volume)
+            return (
+                not self._ANONYMOUS_VOLUME_REGEX.match(volume)
+                and not volume in self.volumes_to_exclude
+            )
 
         return volume in self.volumes_to_backup
 

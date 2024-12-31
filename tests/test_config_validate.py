@@ -50,6 +50,10 @@ volumes:
     options:
       - '--exclude="/volume/my_volume/some_dir"'
       - "--exclude-caches"
+  - name: '*'
+    exclude:
+      - this_one
+      - that_one
 localdirs:
   - name: my_tag
     path: path

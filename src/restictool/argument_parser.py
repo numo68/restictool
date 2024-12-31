@@ -18,7 +18,7 @@ class Arguments:
     def __init__(self):
         self.tool_arguments = None
         self.restic_arguments = None
-        self.version = "0.6.2"
+        self.version = "0.7.0"
 
     def parse(self, arguments=None) -> Settings:
         """Parses the restictool arguments

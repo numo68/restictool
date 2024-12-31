@@ -33,6 +33,7 @@ OPTIONS_SCHEMA = Schema(
 VOLUME_SCHEMA = Schema(
     {
         "name": And(str, lambda s: len(s) > 0),
+        Optional("exclude"): [And(Use(str), lambda s: len(s) > 0)],
         Optional("options"): [And(Use(str), lambda s: len(s) > 0)],
     },
 )

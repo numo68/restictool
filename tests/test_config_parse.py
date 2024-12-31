@@ -375,6 +375,44 @@ volumes:
             )
         )
 
+    def test_volume_exclude(self):
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+volumes:
+    - name: '*'
+      exclude:
+        - vol2
+        - vol3
+"""
+        )
+        self.assertEqual(self.config.volumes_to_exclude, ["vol2", "vol3"])
+        self.assertTrue(self.config.is_volume_backed_up("volx"))
+        self.assertFalse(self.config.is_volume_backed_up("vol2"))
+        self.assertFalse(self.config.is_volume_backed_up("vol3"))
+        self.assertFalse(
+            self.config.is_volume_backed_up(
+                "0123456789abcdef0123456789abcdef0123456789abcdef"
+            )
+        )
+
+    def test_volume_exclude_wildcard_only(self):
+        self.config.load(
+            """
+repository:
+  location: "s3:https://somewhere:8010/restic-backups"
+  password: "MySecretPassword"
+volumes:
+    - name: vol2
+      exclude:
+        - vol2
+"""
+        )
+        self.assertTrue(self.config.is_volume_backed_up("vol2"))
+        self.assertEqual(self.config.volumes_to_exclude, [])
+
     def test_localdirs_to_backup(self):
         """Test getting the list of local directories to backup"""
         self.config.load(

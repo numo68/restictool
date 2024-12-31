@@ -28,8 +28,8 @@ file ``a/b/c/d`` is seen as ``/localdir/my_dir/c/d``.
 
 
 The container running ``restic`` gets a ``restictool.local`` added to the hosts
-pointing to the gateway of the first config in the default bridge network. You
-can use this for tunneled setups.
+pointing to the gateway of the first IPAM configuration in the default bridge
+network. You can use this for tunneled setups.
 
 
 Common arguments
@@ -268,12 +268,24 @@ Volume backup specification
           - "--exclude-caches"
 
 ``volumes`` is a list of the docker volumes to backup when running
-the  ``backup`` command. If the name is ``'*''``, all non-anonymous
-(not 48+ hex characters) volumes are backed up. ``options``
-will be used when backing up the specified volume. If there is
-both ``*`` and a specific name, the options will come from the
-specific one and if not found, from the wildcard one.
+the  ``backup`` command. ``options`` will be used when backing up
+the specified volume. 
 
+.. code-block:: yaml
+
+    volumes:
+      - name: '*'
+        exclude:
+          - without_this_volume
+        options:
+          - '--exclude="/volume/my_volume/some_dir"'
+          - "--exclude-caches"
+
+If the name is ``'*'``, all non-anonymous (not 48+ hex characters) volumes
+that are not mentioned in the ``exclude`` list are backed up. If there is
+both ``*`` and a specific name, the options will come from the specific one
+and if not found, from the wildcard one. If the name is not ``'*'``, ``exclude``
+is ignored.
 
 Local directory backup specification
 ------------------------------------
