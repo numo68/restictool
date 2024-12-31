@@ -1,9 +1,3 @@
-restictool package
-==================
-
-Submodules
-----------
-
 restictool.argument\_parser module
 ----------------------------------
 
@@ -52,8 +46,8 @@ restictool.settings module
    :undoc-members:
    :show-inheritance:
 
-Module contents
----------------
+Main Module
+-----------
 
 .. automodule:: restictool
    :members:

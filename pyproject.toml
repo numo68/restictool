@@ -64,3 +64,6 @@ push = false
 "src/restictool/argument_parser.py" = [
     'self.version = "{version}"',
 ]
+"docs/source/conf.py" = [
+    'release = "{version}"',
+]

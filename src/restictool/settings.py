@@ -46,20 +46,16 @@ class Settings:
         Only read when restoring.
     restic_arguments : list
         Arguments passed to the ``restic``.
-
-    DEFAULT_IMAGE : str
-        Default image to pull/run (class attribute).
-    DEFAULT_CONFIGURATION_FILE : str
-        Default configuration file to read (class attribute).
-    DEFAULT_CACHE_DIR : str
-        Default cache directory (class attribute).
     """
 
     DEFAULT_IMAGE = "restic/restic"
+    """Default image to pull/run"""
     DEFAULT_CONFIGURATION_FILE = path.join(
         environ["HOME"], ".config", "restictool", "restictool.yml"
     )
+    """Default configuration file to read (class attribute)."""
     DEFAULT_CACHE_DIR = path.join(environ["HOME"], ".cache", "restic")
+    """Default cache directory (class attribute)."""
 
     def __init__(self):
         self.subcommand = SubCommand.NOTSET

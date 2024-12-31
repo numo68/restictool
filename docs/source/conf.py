@@ -11,13 +11,14 @@ import os, sys
 project = "Restic Tool"
 copyright = "2024, Stanislav Meduna"
 author = "Stanislav Meduna"
-release = "0.5.1"
+release = "0.6.2"
 
 # -- General configuration ---------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#general-configuration
 
 extensions = [
     "sphinx.ext.napoleon",
+    "sphinx.ext.autodoc",
 ]
 
 templates_path = ["_templates"]
