@@ -5,6 +5,7 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "restictool"
 version = "0.7.1"
+license = "MIT"
 authors = [
   { name="Stanislav Meduna", email="stano@meduna.org" },
 ]
@@ -13,7 +14,6 @@ readme = "README.rst"
 requires-python = ">=3.10"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
 dependencies = [
