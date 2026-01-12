@@ -121,7 +121,7 @@ localdirs:
             mounts,
             {
                 self.default_cache_dir: {"bind": "/cache", "mode": "rw"},
-                "my_volume": {"bind": "/volume/my_volume", "mode": "rw"},
+                "my_volume": {"bind": "/volume/my_volume", "mode": "ro"},
             },
         )
 
@@ -133,7 +133,7 @@ localdirs:
             mounts,
             {
                 self.default_cache_dir: {"bind": "/cache", "mode": "rw"},
-                "/path": {"bind": "/localdir/my_tag", "mode": "rw"},
+                "/path": {"bind": "/localdir/my_tag", "mode": "ro"},
             },
         )
 

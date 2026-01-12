@@ -1,5 +1,4 @@
-"""Parses the configuration for the restictool
-"""
+"""Parses the configuration for the restictool"""
 
 import io
 import platform

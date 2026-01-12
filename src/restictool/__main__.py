@@ -1,5 +1,4 @@
-"""Allows to run the tool as ``python -m restictool ...``
-"""
+"""Allows to run the tool as ``python -m restictool ...``"""
 
 from .entry_point import run
 

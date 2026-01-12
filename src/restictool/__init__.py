@@ -1,5 +1,4 @@
-"""Exports the setuptools entrypoint
-"""
+"""Exports the setuptools entrypoint"""
 
 from .entry_point import run
 

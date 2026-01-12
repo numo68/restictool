@@ -28,8 +28,8 @@ file ``a/b/c/d`` is seen as ``/localdir/my_dir/c/d``.
 
 
 The container running ``restic`` gets a ``restictool.local`` added to the hosts
-pointing to the gateway of the first IPAM configuration in the default bridge
-network. You can use this for tunneled setups.
+pointing to the gateway of the first IPv4 IPAM configuration in the default
+bridge network. You can use this for tunneled setups.
 
 
 Common arguments

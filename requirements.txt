@@ -4,3 +4,4 @@ schema
 setuptools
 python-dateutil
 prometheus-client
+ipaddress

@@ -10,6 +10,7 @@ import docker
 import yaml
 import traceback
 import time
+import ipaddress
 
 from .settings import Settings, SubCommand
 from .configuration_parser import Configuration
@@ -380,7 +381,7 @@ formatters:
                                 self.format_exception(ex),
                                 elapsed=time.monotonic() - start_time,
                             )
-                            
+
                     else:
                         self.log(
                             logging.error,
@@ -557,13 +558,22 @@ formatters:
         """Find own address on the default bridge network"""
         try:
             bridge = self.client.networks.get(self._BRIDGE_NETWORK_NAME, scope="local")
-            self.own_ip_address = bridge.attrs["IPAM"]["Config"][0]["Gateway"]
-            self.log(
-                logging.debug,
-                "Own address on the '%s' network: %s",
-                self._BRIDGE_NETWORK_NAME,
-                self.own_ip_address,
-            )
+            for config in bridge.attrs["IPAM"]["Config"]:
+                if (
+                    "Gateway" in config
+                    and type(ipaddress.ip_address(config["Gateway"]))
+                    is ipaddress.IPv4Address
+                ):
+                    self.own_ip_address = config["Gateway"]
+                    self.log(
+                        logging.debug,
+                        "Own address on the '%s' network: %s",
+                        self._BRIDGE_NETWORK_NAME,
+                        self.own_ip_address,
+                    )
+                    break
+            else:
+                raise KeyError
         except (docker.errors.NotFound, KeyError, TypeError, IndexError):
             self.log(
                 logging.warning,
@@ -619,13 +629,13 @@ formatters:
             if volume:
                 mounts[volume] = {
                     "bind": "/volume/" + volume,
-                    "mode": "rw",
+                    "mode": "ro",
                 }
 
             if localdir:
                 mounts[localdir[1]] = {
                     "bind": "/localdir/" + localdir[0],
-                    "mode": "rw",
+                    "mode": "ro",
                 }
 
         if self.settings.subcommand == SubCommand.RESTORE:

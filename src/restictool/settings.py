@@ -1,5 +1,4 @@
-"""Holds the settings for the tool.
-"""
+"""Holds the settings for the tool."""
 
 from enum import Enum
 from os import environ, path
