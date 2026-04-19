@@ -1,13 +1,12 @@
 """Parses the configuration for the restictool"""
 
-import io
 import platform
 import re
 import os
 import typing
 
 from schema import SchemaError
-from yaml import load, FullLoader
+from yaml import safe_load
 
 from .configuration_validator import validate
 
@@ -72,34 +71,44 @@ class Configuration:
         self.localdirs_to_backup: list[tuple[str, str]] = []
         self.metrics_path: str | None = None
 
-    def load(self, stream: io.IOBase | str, close: bool = True) -> None:
-        """Loads, parses and validates the configuration from a stream.
+    def load(self, path: str) -> None:
+        """Loads, parses and validates the configuration from a file.
 
         Parameters
         ----------
-        stream : io.IOBase | str
-            Stream to read the configuration from.
-        close : bool, optional
-            If the stream is an instance of io.IOBase and the close argument is True,
-            it will be closed. The default is True.
+        path : str
+            Path to the configuration file.
 
         Raises
         ------
         ValueError
             If the configuration is invalid.
         """
+
+        with open(path, "r", encoding="utf-8") as file:
+            config = file.read()
+
         try:
-            config = load(stream, Loader=FullLoader)
+            self.parse(config)
         except Exception as ex:
             raise ValueError(
                 "configuration invalid\n" + str(ex.with_traceback(None))
             ) from None
 
-        if isinstance(stream, io.IOBase) and close:
-            stream.close()
+    def parse(self, config: str) -> None:
+        """Parses and validates the configuration.
+        Parameters
+        ----------
+        config : dict
+            The YAML configuration to parse and validate.
+        Raises
+        ------
+        ValueError
+            If the configuration is invalid.
+        """
 
         try:
-            self.configuration = validate(config)
+            self.configuration = validate(safe_load(config))
         except SchemaError as ex:
             raise ValueError(
                 "configuration invalid\n" + str(ex.with_traceback(None))
@@ -123,7 +132,7 @@ class Configuration:
             if "suffix" in self.configuration["metrics"]:
                 self.metrics_path += "-" + self.configuration["metrics"]["suffix"]
 
-            self.metrics_path += ".prom" # type: ignore
+            self.metrics_path += ".prom"
 
         self.volumes_to_backup = []
         self.backup_all_volumes = False

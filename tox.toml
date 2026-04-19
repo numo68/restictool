@@ -1,0 +1,30 @@
+requires = ["tox>=4.52"]
+env_list = ["3.14", "lint"]
+
+[env_run_base]
+description = "run the test suite with pytest"
+package = "editable"
+deps = [
+    "pytest>=9",
+    "pyfakefs",
+]
+commands = [
+    ["pytest", "--basetemp={env_tmp_dir}", { replace = "posargs", default = ["tests"], extend = true }]
+]
+
+[env.lint]
+description = "run linters"
+deps = ["-rrequirements_dev.txt"]
+commands = [
+    ["ruff", "check", { replace = "posargs", default = ["."], extend = true }],
+    ["pylint", { replace = "posargs", default = ["src"], extend = true }],
+    ["mypy", "--strict", { replace = "posargs", default = ["src"], extend = true }],
+]
+
+[env.format]
+description = "fix ruff issues and format the code"
+deps = ["-rrequirements_dev.txt"]
+commands = [
+    ["ruff", "check", "--fix", { replace = "posargs", default = ["."], extend = true }],
+    ["black", { replace = "posargs", default = ["src", "tests"], extend = true }],
+]

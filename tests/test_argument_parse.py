@@ -42,7 +42,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         """Test default arguments"""
         self.parser.parse(["run"])
         self.assertEqual(
-            self.parser.tool_arguments["config"].name, self.default_configuration_file
+            self.parser.tool_arguments["config"], self.default_configuration_file
         )
         self.assertEqual(self.parser.tool_arguments["cache"], self.default_cache_dir)
         self.assertEqual(self.parser.tool_arguments["image"], self.default_image)
@@ -70,7 +70,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 "run",
             ]
         )
-        self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
+        self.assertEqual(self.parser.tool_arguments["config"], alt_config)
         self.assertEqual(self.parser.tool_arguments["cache"], alt_cache)
         self.assertEqual(self.parser.tool_arguments["image"], alt_image)
         self.assertTrue(self.parser.tool_arguments["force_pull"])
@@ -87,7 +87,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 "run",
             ]
         )
-        self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
+        self.assertEqual(self.parser.tool_arguments["config"], alt_config)
         self.assertEqual(self.parser.tool_arguments["log_level"], "error")
         self.assertTrue(self.parser.tool_arguments["quiet"])
 
@@ -98,7 +98,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
                 "check",
             ]
         )
-        self.assertEqual(self.parser.tool_arguments["config"].name, alt_config)
+        self.assertEqual(self.parser.tool_arguments["config"], alt_config)
 
     def test_extra(self):
         """Test extra arguments"""
@@ -146,9 +146,6 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         """Test invalid arguments"""
 
         with pytest.raises(SystemExit):
-            self.parser.parse(["-c", "/tmp/nonexistent", "run"])
-
-        with pytest.raises(SystemExit):
             self.parser.parse(["--image", "-v", "run"])
 
         with pytest.raises(SystemExit):
@@ -161,7 +158,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
 
         self.assertEqual(settings.subcommand, SubCommand.RUN)
         self.assertEqual(
-            settings.configuration_stream.name, self.default_configuration_file
+            settings.configuration_path, self.default_configuration_file
         )
         self.assertEqual(settings.image, Settings.DEFAULT_IMAGE)
         self.assertFalse(settings.force_pull)

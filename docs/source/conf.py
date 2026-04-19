@@ -6,7 +6,8 @@
 # -- Project information -----------------------------------------------------
 # https://www.sphinx-doc.org/en/master/usage/configuration.html#project-information
 
-import os, sys
+import os
+import sys
 
 project = "Restic Tool"
 copyright = "2024, Stanislav Meduna"

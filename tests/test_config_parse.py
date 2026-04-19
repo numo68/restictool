@@ -1,15 +1,14 @@
 """Test configuration parsing"""
 
-import io
 import os
-import unittest
 import platform
 import pytest
 
+from pyfakefs import fake_filesystem_unittest
 from restictool.configuration_parser import Configuration
 
 
-class TestConfigParser(unittest.TestCase):
+class TestConfigParser(fake_filesystem_unittest.TestCase):
     """Test argument parsing"""
 
     def setUp(self):
@@ -52,26 +51,39 @@ localdirs:
 """
         self.config = Configuration()
 
+        self.default_configuration_dir = os.path.join(
+            os.environ["HOME"],
+            ".config",
+            "restictool",
+        )
+        self.default_configuration_file = os.path.join(
+            self.default_configuration_dir, "restictool.yml"
+        )
+        self.default_cache_dir = os.path.join(os.environ["HOME"], ".cache", "restic")
+        self.default_image = "restic/restic"
+
+        self.setUpPyfakefs()
+        os.makedirs(self.default_configuration_dir)
+
+        with open(self.default_configuration_file, "w", encoding="utf8") as file:
+            file.write(self.config_yaml)
+
+    def test_parse(self):
+        """Test parse"""
+        self.config.parse(self.config_yaml)
+
     def test_load(self):
-        """Test load with close"""
-        config_stream = io.StringIO(self.config_yaml)
-        config_stream.seek(0, io.SEEK_SET)
+        """Test load"""
+        self.config.load(self.default_configuration_file)
 
-        self.config.load(config_stream)
-        self.assertTrue(config_stream.closed)
-
-    def test_load_keep_open(self):
-        """Test load without close"""
-        config_stream = io.StringIO(self.config_yaml)
-        config_stream.seek(0, io.SEEK_SET)
-
-        self.config.load(self.config_yaml, False)
-        self.assertFalse(config_stream.closed)
-        config_stream.close()
+    def test_load_fail(self):
+        """Test load"""
+        with pytest.raises(FileNotFoundError):
+            self.config.load("/tmp/nonexistent")
 
     def test_validate(self):
         """Test the validator"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -79,17 +91,17 @@ repository:
 """
         )
         with pytest.raises(ValueError, match="repository"):
-            self.config.load("foo:\n")
+            self.config.parse("foo:\n")
 
         with pytest.raises(ValueError, match="repository"):
-            self.config.load("repository:\n")
+            self.config.parse("repository:\n")
 
         with pytest.raises(ValueError, match="location"):
-            self.config.load("repository:\n  location:\n")
+            self.config.parse("repository:\n  location:\n")
 
     def test_env_vars(self):
         """Test environment variables parsing"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(
             self.config.environment_vars["AWS_ACCESS_KEY_ID"], "S3:SomeKeyId"
         )
@@ -108,7 +120,7 @@ repository:
     def test_forbidden_env_vars(self):
         """Test environment variables parsing"""
         with pytest.raises(ValueError, match=r"RESTIC_REPOSITORY.*forbidden"):
-            self.config.load(
+            self.config.parse(
                 """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -120,10 +132,10 @@ repository:
 
     def test_hostname(self):
         """Test hostname setting parsing"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(self.config.hostname, "myhost")
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -134,12 +146,12 @@ repository:
 
     def test_options_common(self):
         """Test parsing of the common options"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(self.config.get_options(), ["--insecure-tls"])
 
     def test_options_forget(self):
         """Test parsing of the forget options"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(
             self.config.get_options(forget=True),
             ["--insecure-tls", "--keep-daily", "7", "--keep-weekly", "5"],
@@ -147,7 +159,7 @@ repository:
 
     def test_options_forget_default(self):
         """Test parsing of the forget default options"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -173,7 +185,7 @@ options:
 
     def test_options_prune(self):
         """Test parsing of the prune options"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -188,7 +200,7 @@ options:
             ],
         )
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -209,7 +221,7 @@ options:
 
     def test_options_volume(self):
         """Test parsing of the volume options"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(
             self.config.get_options(volume="my_volume"),
             [
@@ -229,7 +241,7 @@ options:
 
     def test_options_volume_wildcard(self):
         """Test parsing of the volume wildcard matching"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -247,7 +259,7 @@ volumes:
             ],
         )
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -276,7 +288,7 @@ volumes:
 
     def test_options_localdir(self):
         """Test parsing of the localdir options"""
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(
             self.config.get_options(localdir="my_tag"),
             [
@@ -297,7 +309,7 @@ volumes:
 
     def test_volumes_to_backup(self):
         """Test getting the list of volumes to backup"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -310,7 +322,7 @@ repository:
         )
         self.assertFalse(self.config.backup_all_volumes)
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -323,7 +335,7 @@ volumes:
         self.assertEqual(self.config.volumes_to_backup, ["vol1", "vol2"])
         self.assertFalse(self.config.backup_all_volumes)
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -338,7 +350,7 @@ volumes:
 
     def test_is_volume_backed(self):
         """Test getting the list of volumes to backup"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -351,7 +363,7 @@ volumes:
         self.assertTrue(self.config.is_volume_backed_up("vol2"))
         self.assertFalse(self.config.is_volume_backed_up("volx"))
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -376,7 +388,7 @@ volumes:
         )
 
     def test_volume_exclude(self):
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -399,7 +411,7 @@ volumes:
         )
 
     def test_volume_exclude_wildcard_only(self):
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -415,7 +427,7 @@ volumes:
 
     def test_localdirs_to_backup(self):
         """Test getting the list of local directories to backup"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -427,7 +439,7 @@ repository:
             [],
         )
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -445,7 +457,7 @@ localdirs:
 
     def test_is_forget_specified(self):
         """Test whether to run the forget pass"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -454,7 +466,7 @@ repository:
         )
         self.assertFalse(self.config.is_forget_specified())
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -466,7 +478,7 @@ options:
         )
         self.assertFalse(self.config.is_forget_specified())
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -480,7 +492,7 @@ options:
 
     def test_is_prune_specified(self):
         """Test whether to run the prune pass"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -489,7 +501,7 @@ repository:
         )
         self.assertFalse(self.config.is_prune_specified())
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -501,7 +513,7 @@ options:
         )
         self.assertFalse(self.config.is_prune_specified())
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -513,7 +525,7 @@ options:
         self.assertTrue(self.config.is_prune_specified())
         self.assertEqual(self.config.configuration["options"]["prune"], [])
 
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -529,7 +541,7 @@ options:
 
     def test_localdirs_tilde_expansion(self):
         """Test getting the list of local directories to backup"""
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -547,11 +559,11 @@ localdirs:
         )
 
     def test_metrics(self):
-        self.config.load(self.config_yaml)
+        self.config.parse(self.config_yaml)
         self.assertEqual(self.config.metrics_path, "/tmp/foo/restictool-bar.prom")
 
     def test_metrics_no_suffix(self):
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
@@ -563,7 +575,7 @@ metrics:
         self.assertEqual(self.config.metrics_path, "/tmp/foo/restictool.prom")
 
     def test_no_metrics(self):
-        self.config.load(
+        self.config.parse(
             """
 repository:
   location: "s3:https://somewhere:8010/restic-backups"

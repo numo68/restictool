@@ -133,7 +133,7 @@ formatters:
         self.configuration = Configuration()
 
         try:
-            self.configuration.load(self.settings.configuration_stream)
+            self.configuration.load(self.settings.configuration_path)
         except Exception as ex:
             logging.fatal(
                 "Could not load the configuration %s", self.format_exception(ex)

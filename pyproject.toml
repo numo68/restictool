@@ -45,7 +45,13 @@ testpaths = [
 ]
 
 [tool.pylint.format]
-max-line-length = 120
+max-line-length = 130
+max-branches=20
+max-statements=75
+max-args=6
+max-positional-arguments=6
+max-attributes=10
+min-public-methods=0
 
 [tool.bumpver]
 current_version = "0.7.1"

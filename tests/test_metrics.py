@@ -1,7 +1,5 @@
 """Test configuration parsing"""
 
-import io
-import unittest
 import json
 import os
 from pyfakefs import fake_filesystem_unittest
@@ -23,10 +21,8 @@ metrics:
   directory: "/var/local/lib/metrics"
 """
         self.config = Configuration()
-        config_stream = io.StringIO(self.config_yaml)
-        config_stream.seek(0, io.SEEK_SET)
 
-        self.config.load(config_stream)
+        self.config.parse(self.config_yaml)
         self.snapshots = json.loads(
             """
 [

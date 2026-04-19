@@ -2,8 +2,6 @@
 
 from enum import Enum
 from os import environ, path
-import io
-
 
 class SubCommand(Enum):
     """Defines the sub-command enum for the restic tool."""
@@ -31,8 +29,8 @@ class Settings:
     force_pull : bool
         If True the image will be pulled before running the backup. If False
         it will be only pulled if not present on the system.
-    configuration_stream : io.IOBase | str
-        The configuration file or string.
+    configuration_path : str | None
+        The path to the configuration file.
     cache_directory: str
         An absolute path to a cache directory.
     log_level : str
@@ -58,13 +56,13 @@ class Settings:
     """Default cache directory (class attribute)."""
 
     def __init__(self) -> None:
-        self.subcommand: SubCommand = SubCommand.NOTSET
-        self.image: str = self.DEFAULT_IMAGE
-        self.force_pull: bool = False
-        self.configuration_stream: io.IOBase | str = Settings.DEFAULT_CONFIGURATION_FILE
-        self.cache_directory: str = self.DEFAULT_CACHE_DIR
-        self.log_level: str = "WARNING"
-        self.quiet: bool = False
-        self.restore_snapshot: str | None = None
-        self.restore_directory: str | None = None
-        self.restic_arguments: list[str] = []
+        self.subcommand : SubCommand = SubCommand.NOTSET
+        self.image : str = self.DEFAULT_IMAGE
+        self.force_pull : bool = False
+        self.configuration_path : str = self.DEFAULT_CONFIGURATION_FILE
+        self.cache_directory : str = self.DEFAULT_CACHE_DIR
+        self.log_level : str = "WARNING"
+        self.quiet : bool = False
+        self.restore_snapshot : str | None = None
+        self.restore_directory : str | None = None
+        self.restic_arguments : list[str] = []

@@ -3,9 +3,11 @@ black
 pylint
 ruff
 pytest
+pyfakefs
 bumpver
 tox
 mypy
 types-PyYAML
 types-python-dateutil
 types-docker
+twine

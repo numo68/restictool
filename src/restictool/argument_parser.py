@@ -1,7 +1,6 @@
 """Parses the arguments for the restictool"""
 
 import argparse
-import io
 import typing
 from .settings import Settings, SubCommand
 
@@ -44,7 +43,6 @@ class Arguments:
             "--config",
             default=Settings.DEFAULT_CONFIGURATION_FILE,
             metavar="FILE",
-            type=argparse.FileType("r"),
             help="the configuration file (default: %(default)s)",
         )
         parser.add_argument(
@@ -131,8 +129,8 @@ class Arguments:
         ]
         settings.image = typing.cast(str, self.tool_arguments["image"])
         settings.force_pull = typing.cast(bool, self.tool_arguments["force_pull"])
-        settings.configuration_stream = typing.cast(
-            typing.Union[io.IOBase, str], self.tool_arguments["config"]
+        settings.configuration_path = typing.cast(
+            str, self.tool_arguments["config"]
         )
         settings.cache_directory = typing.cast(str, self.tool_arguments["cache"])
         settings.log_level = typing.cast(str, self.tool_arguments["log_level"]).upper()
