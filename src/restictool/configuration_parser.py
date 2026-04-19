@@ -123,7 +123,7 @@ class Configuration:
             if "suffix" in self.configuration["metrics"]:
                 self.metrics_path += "-" + self.configuration["metrics"]["suffix"]
 
-            self.metrics_path += ".prom"
+            self.metrics_path += ".prom" # type: ignore
 
         self.volumes_to_backup = []
         self.backup_all_volumes = False

@@ -12,6 +12,7 @@ import traceback
 import typing
 
 import docker
+import docker.errors
 import yaml
 
 from .configuration_parser import Configuration
@@ -401,8 +402,6 @@ formatters:
                         "Metrics directory does not exist or is not a directory, no metrics generated",
                         elapsed=time.monotonic() - start_time,
                     )
-
-                exit_code = max(exit_code, code)
 
         else:
             self.log(logging.warning, "Nothing to back up")

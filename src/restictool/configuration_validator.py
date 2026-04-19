@@ -24,19 +24,23 @@ METRICS_SCHEMA = Schema(
 
 OPTIONS_SCHEMA = Schema(
     {
-        Optional("common"): [And(Use(str), lambda s: len(s) > 0)],
-        Optional("forget"): [And(Use(str), lambda s: len(s) > 0)],
-        Optional("prune"): Or([And(Use(str), lambda s: len(s) > 0)], None),
-        Optional("volume"): [And(Use(str), lambda s: len(s) > 0)],
-        Optional("localdir"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("common"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
+        Optional("forget"): Or(
+            Schema([And(Schema(Use(str)), lambda s: len(s) > 0)]), Schema(None)
+        ),
+        Optional("prune"): Or(
+            Schema([And(Schema(Use(str)), lambda s: len(s) > 0)]), Schema(None)
+        ),
+        Optional("volume"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
+        Optional("localdir"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
     },
 )
 
 VOLUME_SCHEMA = Schema(
     {
         "name": And(str, lambda s: len(s) > 0),
-        Optional("exclude"): [And(Use(str), lambda s: len(s) > 0)],
-        Optional("options"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("exclude"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
+        Optional("options"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
     },
 )
 
@@ -44,7 +48,7 @@ LOCALDIR_SCHEMA = Schema(
     {
         "name": And(str, lambda s: len(s) > 0),
         "path": And(str, lambda s: len(s) > 0),
-        Optional("options"): [And(Use(str), lambda s: len(s) > 0)],
+        Optional("options"): [And(Schema(Use(str)), lambda s: len(s) > 0)],
     },
 )
 
