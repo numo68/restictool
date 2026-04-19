@@ -2,6 +2,7 @@
 
 from enum import Enum
 from os import environ, path
+import io
 
 
 class SubCommand(Enum):
@@ -56,14 +57,14 @@ class Settings:
     DEFAULT_CACHE_DIR = path.join(environ["HOME"], ".cache", "restic")
     """Default cache directory (class attribute)."""
 
-    def __init__(self):
-        self.subcommand = SubCommand.NOTSET
-        self.image = self.DEFAULT_IMAGE
-        self.force_pull = False
-        self.configuration_stream = None
-        self.cache_directory = self.DEFAULT_CACHE_DIR
-        self.log_level = "WARNING"
-        self.quiet = False
-        self.restore_snapshot = None
-        self.restore_directory = None
-        self.restic_arguments = []
+    def __init__(self) -> None:
+        self.subcommand: SubCommand = SubCommand.NOTSET
+        self.image: str = self.DEFAULT_IMAGE
+        self.force_pull: bool = False
+        self.configuration_stream: io.IOBase | str = Settings.DEFAULT_CONFIGURATION_FILE
+        self.cache_directory: str = self.DEFAULT_CACHE_DIR
+        self.log_level: str = "WARNING"
+        self.quiet: bool = False
+        self.restore_snapshot: str | None = None
+        self.restore_directory: str | None = None
+        self.restic_arguments: list[str] = []

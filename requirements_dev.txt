@@ -1,0 +1,11 @@
+setuptools
+black
+pylint
+ruff
+pytest
+bumpver
+tox
+mypy
+types-PyYAML
+types-python-dateutil
+types-docker

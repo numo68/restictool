@@ -4,8 +4,10 @@ Transform the restic metrics from the json snapshot output to prometheus metrics
 Only works for restic >= 0.17.0
 """
 
-import os
+import typing
+
 from dateutil import parser
+
 from prometheus_client import Gauge, CollectorRegistry, write_to_textfile
 
 from .configuration_parser import Configuration
@@ -16,7 +18,7 @@ class Metrics:
     Transforms the snapshot summary to the prometheus text format
     """
 
-    def __init__(self, configuration: Configuration):
+    def __init__(self, configuration: Configuration) -> None:
         """Initialize metrics collector
 
         Args:
@@ -65,7 +67,7 @@ class Metrics:
         # return int(datetime.fromisoformat(time.split('.')[0].split('Z')[0] + "+00:00").timestamp())
         return parser.isoparse(time).timestamp()
 
-    def set_snapshot(self, snapshot: dict):
+    def set_snapshot(self, snapshot: dict[str, typing.Any]) -> None:
         """Set the metrics from a snapshot JSON
 
         Args:
@@ -95,7 +97,7 @@ class Metrics:
         except KeyError:
             pass
 
-    def set_snapshots(self, snapshots: list):
+    def set_snapshots(self, snapshots: list[dict[str, typing.Any]]) -> None:
         """Set the metrics from a list of snapshot
 
         Args:
@@ -104,7 +106,7 @@ class Metrics:
         for snapshot in snapshots:
             self.set_snapshot(snapshot)
 
-    def write_to_file(self):
+    def write_to_file(self) -> None:
         """Atomically write the metrics to the file
 
         Args:
@@ -112,5 +114,5 @@ class Metrics:
             snapshots (list): a list of snapshots
             path (str): path of the destination file
         """
-
+        assert self.configuration.metrics_path is not None
         write_to_textfile(self.configuration.metrics_path, self.registry)

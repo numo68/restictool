@@ -1,7 +1,6 @@
 PyYAML
 docker
 schema
-setuptools
 python-dateutil
 prometheus-client
 ipaddress

@@ -10,7 +10,7 @@ from .argument_parser import Arguments
 # pylint: disable=broad-except
 
 
-def run():
+def run() -> None:
     """Fetch and parse the command-line arguments and run the tool."""
 
     try:

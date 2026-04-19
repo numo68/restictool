@@ -1,5 +1,7 @@
 """Validates the configuration schema"""
 
+import typing
+
 from schema import Schema, And, Or, Optional, Use
 
 REPOSITORY_SCHEMA = Schema(
@@ -58,7 +60,7 @@ SCHEMA = Schema(
 )
 
 
-def validate(config):
+def validate(config: typing.Any) -> typing.Any:
     """Validate the configuration file.
 
     Parameters

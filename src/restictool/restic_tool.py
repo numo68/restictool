@@ -2,19 +2,21 @@
 Fetch the arguments, parse the configuration and run the selected functionality
 """
 
+import ipaddress
 import json
 import logging
 import logging.config
 import os
+import time
+import traceback
+import typing
+
 import docker
 import yaml
-import traceback
-import time
-import ipaddress
 
-from .settings import Settings, SubCommand
 from .configuration_parser import Configuration
 from .metrics import Metrics
+from .settings import Settings, SubCommand
 
 
 class ResticToolException(Exception):
@@ -22,11 +24,11 @@ class ResticToolException(Exception):
     line exit wit the code provided.
     """
 
-    def __init__(self, code: int, description: str):
+    def __init__(self, code: int, description: str) -> None:
         self.exit_code = code
         self.description = description
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.description
 
 
@@ -44,13 +46,19 @@ class ResticTool:
     _OWN_HOSTNAME = "restictool.local"
     _BRIDGE_NETWORK_NAME = "bridge"
 
-    def __init__(self, settings: Settings):
+    def __init__(self, settings: Settings) -> None:
         self.settings = settings
-        self.configuration = None
-        self.client = None
+        self.configuration: Configuration = Configuration()
+        self.client: typing.Any = None
         self.own_ip_address = None
 
-    def log(self, log_function, *args, entity=None, elapsed=None):
+    def log(
+        self,
+        log_function: typing.Callable[..., None],
+        *args: typing.Any,
+        entity: str | None = None,
+        elapsed: float | None = None,
+    ) -> None:
         """Log the message, filling out the extras.
 
         Parameters
@@ -77,7 +85,7 @@ class ResticTool:
             },
         )
 
-    def format_exception(self, ex: Exception):
+    def format_exception(self, ex: Exception) -> str:
         """Return the formatted exception with the traceback stripped"""
         return str(
             [
@@ -86,7 +94,7 @@ class ResticTool:
             ]
         )
 
-    def configure_default_logging(self):
+    def configure_default_logging(self) -> None:
         """Configures the default logging"""
         logging_config = yaml.safe_load(
             """
@@ -101,7 +109,8 @@ handlers:
         stream: ext://sys.stderr
 formatters:
     detailed:
-        format: '%(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s'
+        format: |
+            %(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s
         datefmt: '%Y-%m-%d %H:%M:%S'
 """
         )
@@ -109,7 +118,7 @@ formatters:
         logging_config["root"]["level"] = self.settings.log_level
         logging.config.dictConfig(logging_config)
 
-    def setup(self):
+    def setup(self) -> None:
         """Reads and validates the configuration and prepares the tool.
 
         Raises
@@ -142,7 +151,7 @@ formatters:
 
             try:
                 logging.config.dictConfig(logging_config)
-            except Exception as ex:  # pylint disable=broad-except
+            except Exception as ex:  # pylint: disable=broad-except
                 self.configure_default_logging()
                 self.log(
                     logging.error,
@@ -169,7 +178,7 @@ formatters:
         if self.settings.subcommand != SubCommand.CHECK:
             self.client = docker.from_env()
 
-    def run(self):
+    def run(self) -> None:
         """Runs the tool according to the settings and the configuration.
 
         Raises
@@ -256,8 +265,7 @@ formatters:
                     elapsed=time.monotonic() - start_time,
                 )
 
-            if code > exit_code:
-                exit_code = code
+            exit_code = max(exit_code, code)
 
         for local_dir in self.configuration.localdirs_to_backup:
             self.log(logging.debug, "Backing up local directory", entity=local_dir[0])
@@ -285,8 +293,7 @@ formatters:
                     elapsed=time.monotonic() - start_time,
                 )
 
-            if code > exit_code:
-                exit_code = code
+            exit_code = max(exit_code, code)
 
         if backed_up:
             if self.configuration.is_forget_specified():
@@ -312,8 +319,7 @@ formatters:
                         elapsed=time.monotonic() - start_time,
                     )
 
-                if code > exit_code:
-                    exit_code = code
+                exit_code = max(exit_code, code)
 
             if self.configuration.is_prune_specified():
                 self.log(logging.debug, "Pruning the repository")
@@ -338,8 +344,7 @@ formatters:
                         elapsed=time.monotonic() - start_time,
                     )
 
-                if code > exit_code:
-                    exit_code = code
+                exit_code = max(exit_code, code)
 
             if self.configuration.metrics_path:
                 self.log(logging.debug, "Generating the metrics")
@@ -374,7 +379,7 @@ formatters:
                                 "Successfully generated the metrics",
                                 elapsed=time.monotonic() - start_time,
                             )
-                        except Exception as ex:  # pylint disable=broad-except
+                        except Exception as ex:  # pylint: disable=broad-except
                             self.log(
                                 logging.error,
                                 "Writing the metrics failed: %s",
@@ -389,8 +394,7 @@ formatters:
                             elapsed=time.monotonic() - start_time,
                         )
 
-                    if code > exit_code:
-                        exit_code = code
+                    exit_code = max(exit_code, code)
                 else:
                     self.log(
                         logging.error,
@@ -398,8 +402,7 @@ formatters:
                         elapsed=time.monotonic() - start_time,
                     )
 
-                if code > exit_code:
-                    exit_code = code
+                exit_code = max(exit_code, code)
 
         else:
             self.log(logging.warning, "Nothing to back up")
@@ -507,8 +510,7 @@ formatters:
                     entity=volume_name,
                 )
 
-                if code > exit_code:
-                    exit_code = code
+                exit_code = max(exit_code, code)
 
         return exit_code
 
@@ -554,15 +556,13 @@ formatters:
 
         return exit_code
 
-    def _find_own_network(self):
+    def _find_own_network(self) -> None:
         """Find own address on the default bridge network"""
         try:
             bridge = self.client.networks.get(self._BRIDGE_NETWORK_NAME, scope="local")
             for config in bridge.attrs["IPAM"]["Config"]:
-                if (
-                    "Gateway" in config
-                    and type(ipaddress.ip_address(config["Gateway"]))
-                    is ipaddress.IPv4Address
+                if "Gateway" in config and isinstance(
+                    ipaddress.ip_address(config["Gateway"]), ipaddress.IPv4Address
                 ):
                     self.own_ip_address = config["Gateway"]
                     self.log(
@@ -582,7 +582,7 @@ formatters:
             )
             self.own_ip_address = None
 
-    def _pull_if_needed(self):
+    def _pull_if_needed(self) -> None:
         """Pull the image if requested"""
         if self.settings.force_pull:
             image = self.settings.image.split(":")
@@ -591,7 +591,7 @@ formatters:
                 repository=image[0], tag=image[1] if len(image) > 1 else None
             )
 
-    def _create_directory(self, path: str, name: str):
+    def _create_directory(self, path: str, name: str) -> None:
         """Create a directory if needed"""
         try:
             if not os.path.exists(path) or not os.path.isdir(path):
@@ -607,14 +607,18 @@ formatters:
             )
             raise ResticToolException(16, self.format_exception(ex)) from ex
 
-    def _create_directories(self):
+    def _create_directories(self) -> None:
         """Create directories"""
         self._create_directory(self.settings.cache_directory, "cache")
 
         if self.settings.subcommand == SubCommand.RESTORE:
-            self._create_directory(self.settings.restore_directory, "restore")
+            self._create_directory(
+                typing.cast(str, self.settings.restore_directory), "restore"
+            )
 
-    def _get_docker_mounts(self, volume: str = None, localdir: tuple = None) -> dict:
+    def _get_docker_mounts(
+        self, volume: str | None = None, localdir: tuple[str, str] | None = None
+    ) -> dict[str, dict[str, str]]:
         """
         Get the dict that can be used as ``volumes`` argument to run()
         """
@@ -639,7 +643,7 @@ formatters:
                 }
 
         if self.settings.subcommand == SubCommand.RESTORE:
-            mounts[self.settings.restore_directory] = {
+            mounts[typing.cast(str, self.settings.restore_directory)] = {
                 "bind": "/target",
                 "mode": "rw",
             }
@@ -648,11 +652,11 @@ formatters:
 
     def _get_restic_arguments(
         self,
-        volume: str = None,
-        localdir_name: str = None,
+        volume: str | None = None,
+        localdir_name: str | None = None,
         forget: bool = False,
         prune: bool = False,
-    ) -> list:
+    ) -> list[str]:
         """
         Get the restic arguments for the specified command and eventually
         volume or local directory
@@ -688,7 +692,9 @@ formatters:
                 options.extend(["--host", self.configuration.hostname])
 
         elif self.settings.subcommand == SubCommand.RESTORE:
-            options.extend(["restore", self.settings.restore_snapshot])
+            options.extend(
+                ["restore", typing.cast(str, self.settings.restore_snapshot)]
+            )
             options.extend(["--target", "/target"])
             options.extend(self.configuration.get_options())
 
@@ -701,9 +707,15 @@ formatters:
         return options
 
     def _run_docker(
-        self, command: list, env: dict, volumes: dict, quiet=False, entrypoint=None
-    ) -> int:
+        self,
+        command: list[str],
+        env: dict[str, str],
+        volumes: dict[str, dict[str, str]],
+        quiet: bool = False,
+        entrypoint: str | None = None,
+    ) -> tuple[int, str]:
         """Execute docker with the configured options"""
+        assert self.client is not None
 
         self.log(
             logging.debug,
@@ -720,7 +732,8 @@ formatters:
             environment=env,
             extra_hosts=(
                 {self._OWN_HOSTNAME: self.own_ip_address}
-                if self.own_ip_address and self.configuration.network_from is None
+                if self.own_ip_address is not None
+                and self.configuration.network_from is None
                 else None
             ),
             network_mode=(

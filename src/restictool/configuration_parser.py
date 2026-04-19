@@ -4,6 +4,7 @@ import io
 import platform
 import re
 import os
+import typing
 
 from schema import SchemaError
 from yaml import load, FullLoader
@@ -60,18 +61,18 @@ class Configuration:
         "12",
     ]
 
-    def __init__(self):
-        self.configuration = None
-        self.environment_vars = None
-        self.hostname = None
-        self.network_from = None
-        self.backup_all_volumes = False
-        self.volumes_to_backup = []
-        self.volumes_to_exclude = []
-        self.localdirs_to_backup = []
-        self.metrics_path = None
+    def __init__(self) -> None:
+        self.configuration: dict[str, typing.Any] = {}
+        self.environment_vars: dict[str, str] = {}
+        self.hostname: str = ""
+        self.network_from: str | None = None
+        self.backup_all_volumes: bool = False
+        self.volumes_to_backup: list[str] = []
+        self.volumes_to_exclude: list[str] = []
+        self.localdirs_to_backup: list[tuple[str, str]] = []
+        self.metrics_path: str | None = None
 
-    def load(self, stream, close=True) -> None:
+    def load(self, stream: io.IOBase | str, close: bool = True) -> None:
         """Loads, parses and validates the configuration from a stream.
 
         Parameters
@@ -182,11 +183,11 @@ class Configuration:
 
     def get_options(
         self,
-        volume: str = None,
-        localdir: str = None,
+        volume: str | None = None,
+        localdir: str | None = None,
         forget: bool = False,
         prune: bool = False,
-    ) -> list:
+    ) -> list[str]:
         """Retrieves the options the restic is to be executed with.
 
         If volume or localdir are specified, the volume/localdir options are appended
@@ -235,7 +236,7 @@ class Configuration:
 
         return options
 
-    def _get_volume_options(self, volume: str) -> list:
+    def _get_volume_options(self, volume: str) -> list[str]:
         options = []
 
         if "volumes" in self.configuration:
@@ -253,7 +254,7 @@ class Configuration:
 
         return options
 
-    def _get_localdir_options(self, localdir: str) -> list:
+    def _get_localdir_options(self, localdir: str) -> list[str]:
         options = []
 
         if "localdirs" in self.configuration:
@@ -284,7 +285,7 @@ class Configuration:
         if self.backup_all_volumes:
             return (
                 not self._ANONYMOUS_VOLUME_REGEX.match(volume)
-                and not volume in self.volumes_to_exclude
+                and volume not in self.volumes_to_exclude
             )
 
         return volume in self.volumes_to_backup

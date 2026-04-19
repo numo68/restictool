@@ -1,6 +1,8 @@
 """Parses the arguments for the restictool"""
 
 import argparse
+import io
+import typing
 from .settings import Settings, SubCommand
 
 
@@ -15,12 +17,12 @@ class Arguments:
     first arguments is a recognized optional one, use -- as a separator.
     """
 
-    def __init__(self):
-        self.tool_arguments = None
-        self.restic_arguments = None
-        self.version = "0.7.1"
+    def __init__(self) -> None:
+        self.tool_arguments: dict[str, object] = {}
+        self.restic_arguments: list[str] = []
+        self.version: str = "0.7.1"
 
-    def parse(self, arguments=None) -> Settings:
+    def parse(self, arguments: list[str] | None = None) -> None:
         """Parses the restictool arguments
 
         Args:
@@ -83,7 +85,7 @@ class Arguments:
             help="mode of the operation",
         )
 
-        parser_backup = subparsers.add_parser(
+        subparsers.add_parser(
             "backup", help="backup the sources specified in the configuration file"
         )
 
@@ -124,16 +126,24 @@ class Arguments:
         """Convert the parsed arguments to the settings class"""
         settings = Settings()
 
-        settings.subcommand = SubCommand[self.tool_arguments["subcommand"].upper()]
-        settings.image = self.tool_arguments["image"]
-        settings.force_pull = self.tool_arguments["force_pull"]
-        settings.configuration_stream = self.tool_arguments["config"]
-        settings.cache_directory = self.tool_arguments["cache"]
-        settings.log_level = self.tool_arguments["log_level"].upper()
-        settings.quiet = self.tool_arguments["quiet"]
+        settings.subcommand = SubCommand[
+            typing.cast(str, self.tool_arguments["subcommand"]).upper()
+        ]
+        settings.image = typing.cast(str, self.tool_arguments["image"])
+        settings.force_pull = typing.cast(bool, self.tool_arguments["force_pull"])
+        settings.configuration_stream = typing.cast(
+            typing.Union[io.IOBase, str], self.tool_arguments["config"]
+        )
+        settings.cache_directory = typing.cast(str, self.tool_arguments["cache"])
+        settings.log_level = typing.cast(str, self.tool_arguments["log_level"]).upper()
+        settings.quiet = typing.cast(bool, self.tool_arguments["quiet"])
         if "restore" in self.tool_arguments:
-            settings.restore_directory = self.tool_arguments["restore"]
-            settings.restore_snapshot = self.tool_arguments["snapshot"]
+            settings.restore_directory = typing.cast(
+                str, self.tool_arguments["restore"]
+            )
+            settings.restore_snapshot = typing.cast(
+                str, self.tool_arguments["snapshot"]
+            )
         settings.restic_arguments = self.restic_arguments
 
         return settings

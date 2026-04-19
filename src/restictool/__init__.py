@@ -3,6 +3,6 @@
 from .entry_point import run
 
 
-def main():
+def main() -> None:
     """Entry point for setuptools"""
     run()
