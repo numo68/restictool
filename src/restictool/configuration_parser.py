@@ -157,6 +157,12 @@ class Configuration:
                 )
                 self.localdirs_to_backup.append((ldir["name"], dir_path))
 
+        if (
+            self.is_forget_specified()
+            and self.configuration["options"]["forget"] is None
+        ):
+            self.configuration["options"]["forget"] = self._FORGET_DEFAULT
+
         if self.is_prune_specified() and self.configuration["options"]["prune"] is None:
             self.configuration["options"]["prune"] = []
 

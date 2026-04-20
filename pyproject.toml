@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "restictool"
-version = "0.7.1"
+version = "0.7.3"
 license = "MIT"
 authors = [
   { name="Stanislav Meduna", email="stano@meduna.org" },
@@ -53,8 +53,11 @@ max-positional-arguments=6
 max-attributes=10
 min-public-methods=0
 
+[tool.black]
+target-version = ["py313"]
+
 [tool.bumpver]
-current_version = "0.7.1"
+current_version = "0.7.3"
 version_pattern = "MAJOR.MINOR.PATCH"
 commit_message = "bump version {old_version} -> {new_version}"
 tag_message = "{new_version}"
@@ -71,7 +74,7 @@ push = false
     'version = "{version}"',
 ]
 "src/restictool/argument_parser.py" = [
-    'self.version : str = "{version}"',
+    'self.version: str = "{version}"',
 ]
 "docs/source/conf.py" = [
     'release = "{version}"',

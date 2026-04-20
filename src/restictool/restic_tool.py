@@ -97,8 +97,7 @@ class ResticTool:
 
     def configure_default_logging(self) -> None:
         """Configures the default logging"""
-        logging_config = yaml.safe_load(
-            """
+        logging_config = yaml.safe_load("""
 version: 1
 root:
     handlers:
@@ -113,8 +112,7 @@ formatters:
         format: |
             %(asctime)s %(levelname)s op=%(operation)s repo=%(repoLocation)s host=%(repoHost)s object=%(object)s msg=%(message)s
         datefmt: '%Y-%m-%d %H:%M:%S'
-"""
-        )
+""")
 
         logging_config["root"]["level"] = self.settings.log_level
         logging.config.dictConfig(logging_config)

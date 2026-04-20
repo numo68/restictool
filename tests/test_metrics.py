@@ -23,8 +23,7 @@ metrics:
         self.config = Configuration()
 
         self.config.parse(self.config_yaml)
-        self.snapshots = json.loads(
-            """
+        self.snapshots = json.loads("""
 [
   {
     "time": "2024-12-10T12:11:40.914326222Z",
@@ -68,8 +67,7 @@ metrics:
     "short_id": "e61d0293"
   }
 ]
-"""
-        )
+""")
 
         self.setUpPyfakefs()
         os.makedirs(self.config.configuration["metrics"]["directory"])
@@ -99,11 +97,11 @@ metrics:
 
         self.assertEqual(
             lines[0],
-            '# HELP restictool_backup_timestamp_seconds Time the backup was started.',
+            "# HELP restictool_backup_timestamp_seconds Time the backup was started.",
         )
         self.assertEqual(
             lines[1],
-            '# TYPE restictool_backup_timestamp_seconds gauge',
+            "# TYPE restictool_backup_timestamp_seconds gauge",
         )
 
         self.assertEqual(

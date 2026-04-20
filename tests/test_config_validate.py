@@ -13,9 +13,7 @@ class TestConfigValidator(unittest.TestCase):
 
     def test_validate_complete(self):
         """Validate a valid config"""
-        config = validate(
-            yaml.safe_load(
-                """
+        config = validate(yaml.safe_load("""
 repository:
   location: "s3:https://somewhere:8010/restic-backups"
   password: "MySecretPassword"
@@ -59,9 +57,7 @@ localdirs:
     path: path
     options:
       - '--exclude="/localdir/my_tag/some_dir"'
-"""
-            )
-        )
+"""))
 
         self.assertEqual(
             config["repository"]["location"],
@@ -138,28 +134,20 @@ localdirs:
 
     def test_validate_repository(self):
         """Validate repository part more thoroughly"""
-        validate(
-            yaml.safe_load(
-                """
+        validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
-"""
-            )
-        )
+"""))
 
         with pytest.raises(SchemaError, match="spurious"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
     repository:
         location: "s3:https://somewhere:8010/restic-backups"
         password: "MySecretPassword"
     spurious:
         - ''
-    """
-                )
-            )
+    """))
 
         with pytest.raises(SchemaError, match="repository"):
             validate(yaml.safe_load("foo:\n"))
@@ -203,240 +191,170 @@ repository:
         """Validate repository part more thoroughly"""
 
         with pytest.raises(SchemaError, match="options"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="common"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     common:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="common"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     common:
         - ''
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="volume"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     volume:
         - ''
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="localdir"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 options:
     localdir:
         - ''
-"""
-                )
-            )
+"""))
 
     def test_validate_volumes(self):
         """Validate volumes part more thoroughly"""
 
         with pytest.raises(SchemaError, match="volumes"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="volumes"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - foo
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="volumes"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: ''
-"""
-                )
-            )
+"""))
 
-        validate(
-            yaml.safe_load(
-                """
+        validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: '*'
-"""
-            )
-        )
+"""))
 
         with pytest.raises(SchemaError, match="volumes"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: vol
       options:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="path"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - name: vol
       path:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="name"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 volumes:
     - options:
         - opt1
-"""
-                )
-            )
+"""))
 
     def test_validate_localdirs(self):
         """Validate localdirs part more thoroughly"""
 
         with pytest.raises(SchemaError, match="localdirs"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="localdirs"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - foo
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="localdirs"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: ''
       path: path
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="localdirs"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: tag
       path: ''
-"""
-                )
-            )
+"""))
 
-        validate(
-            yaml.safe_load(
-                """
+        validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 localdirs:
     - name: tag
       path: mypath
-"""
-            )
-        )
+"""))
 
         with pytest.raises(SchemaError, match="localdirs"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
@@ -444,61 +362,41 @@ localdirs:
     - name: tag
       path: mypath
       options:
-"""
-                )
-            )
+"""))
 
     def test_validate_metrics(self):
         """Validate metrics part more thoroughly"""
 
         with pytest.raises(SchemaError, match="metrics"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 metrics:
-"""
-                )
-            )
+"""))
 
         with pytest.raises(SchemaError, match="metrics"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 metrics:
     suffix: "s3"
-"""
-                )
-            )
+"""))
 
-        self.assertTrue(
-            validate(
-                yaml.safe_load(
-                    """
+        self.assertTrue(validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 metrics:
     directory: "/foo"
-"""
-                )
-            )
-        )
+""")))
 
         with pytest.raises(SchemaError, match="metrics"):
-            validate(
-                yaml.safe_load(
-                    """
+            validate(yaml.safe_load("""
 repository:
     location: "s3:https://somewhere:8010/restic-backups"
     password: "MySecretPassword"
 metrics:
     directory: 1
-"""
-                )
-            )
+"""))

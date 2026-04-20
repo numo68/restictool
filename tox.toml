@@ -1,5 +1,5 @@
 requires = ["tox>=4.52"]
-env_list = ["3.14", "lint"]
+env_list = ["3.13", "lint", "format", "build"]
 
 [env_run_base]
 description = "run the test suite with pytest"
@@ -27,4 +27,23 @@ deps = ["-rrequirements_dev.txt"]
 commands = [
     ["ruff", "check", "--fix", { replace = "posargs", default = ["."], extend = true }],
     ["black", { replace = "posargs", default = ["src", "tests"], extend = true }],
+]
+
+[env.build]
+description = "build source and wheel distributions"
+package = "deps-only"
+deps = ["build>=0.10"]
+commands = [
+    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"]
+]
+
+[env.publish]
+description = "build and publish the package via twine"
+package = "deps-only"
+deps = ["build>=0.10", "twine>=4.0"]
+passenv = ["TWINE_USERNAME", "TWINE_PASSWORD", "TWINE_REPOSITORY_URL", "TWINE_NON_INTERACTIVE"]
+commands = [
+    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"],
+    ["python", "-m", "twine", "check", "dist/*"],
+    ["python", "-m", "twine", "upload", "dist/*"],
 ]

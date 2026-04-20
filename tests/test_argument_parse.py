@@ -157,9 +157,7 @@ class TestArgumentParser(fake_filesystem_unittest.TestCase):
         settings = self.parser.to_settings()
 
         self.assertEqual(settings.subcommand, SubCommand.RUN)
-        self.assertEqual(
-            settings.configuration_path, self.default_configuration_file
-        )
+        self.assertEqual(settings.configuration_path, self.default_configuration_file)
         self.assertEqual(settings.image, Settings.DEFAULT_IMAGE)
         self.assertFalse(settings.force_pull)
         self.assertEqual(settings.cache_directory, Settings.DEFAULT_CACHE_DIR)

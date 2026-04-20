@@ -245,15 +245,19 @@ executing the ``restic``. ``common`` ones are used for any run,
 volume and ``localdir`` ones when backing up a local directory.
 The ``run`` and ``restore`` commands get just the ``common`` ones.
 
-If ``forget`` is present a ``restic forget`` is run after the
+If ``forget`` is present, a ``restic forget`` is run after the
 backup is completed with these arguments. If ``'DEFAULT'``
-is specified for forget it is expanded to
-``--keep-daily 7 --keep-weekly 5 --keep-monthly 12``.
+is specified for forget, or if there are no arguments specified,
+the ``--keep-daily 7 --keep-weekly 5 --keep-monthly 12`` is used.
 
 If ``prune`` is specified, a ``restic prune`` is run following
 the ``forget``, with the specified arguments (if any). Note that
 this can be costly on a cloud storage charging for API calls
 and downloads.
+
+In case multiple ``restic``s are backing up to the same repository,
+only one of them should be configured to run the ``forget`` and
+``prune`` to avoid locking conflicts.
 
 
 Volume backup specification

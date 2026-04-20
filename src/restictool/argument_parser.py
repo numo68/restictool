@@ -19,7 +19,7 @@ class Arguments:
     def __init__(self) -> None:
         self.tool_arguments: dict[str, object] = {}
         self.restic_arguments: list[str] = []
-        self.version: str = "0.7.1"
+        self.version: str = "0.7.3"
 
     def parse(self, arguments: list[str] | None = None) -> None:
         """Parses the restictool arguments
@@ -129,9 +129,7 @@ class Arguments:
         ]
         settings.image = typing.cast(str, self.tool_arguments["image"])
         settings.force_pull = typing.cast(bool, self.tool_arguments["force_pull"])
-        settings.configuration_path = typing.cast(
-            str, self.tool_arguments["config"]
-        )
+        settings.configuration_path = typing.cast(str, self.tool_arguments["config"])
         settings.cache_directory = typing.cast(str, self.tool_arguments["cache"])
         settings.log_level = typing.cast(str, self.tool_arguments["log_level"]).upper()
         settings.quiet = typing.cast(bool, self.tool_arguments["quiet"])
