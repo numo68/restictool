@@ -19,7 +19,7 @@ class Arguments:
     def __init__(self) -> None:
         self.tool_arguments: dict[str, object] = {}
         self.restic_arguments: list[str] = []
-        self.version: str = "0.7.3"
+        self.version: str = "0.7.4"
 
     def parse(self, arguments: list[str] | None = None) -> None:
         """Parses the restictool arguments

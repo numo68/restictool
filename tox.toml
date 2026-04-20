@@ -39,11 +39,10 @@ commands = [
 
 [env.publish]
 description = "build and publish the package via twine"
-package = "deps-only"
 deps = ["build>=0.10", "twine>=4.0"]
 passenv = ["TWINE_USERNAME", "TWINE_PASSWORD", "TWINE_REPOSITORY_URL", "TWINE_NON_INTERACTIVE"]
 commands = [
-    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "dist"],
-    ["python", "-m", "twine", "check", "dist/*"],
-    ["python", "-m", "twine", "upload", "dist/*"],
+    ["python", "-m", "build", "--sdist", "--wheel", "--outdir", "{envtmpdir}{/}dist"],
+    ["python", "-m", "twine", "check", "{envtmpdir}{/}dist{/}*"],
+    ["python", "-m", "twine", "upload", "{envtmpdir}{/}dist{/}*"],
 ]

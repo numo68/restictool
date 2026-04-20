@@ -249,6 +249,9 @@ If ``forget`` is present, a ``restic forget`` is run after the
 backup is completed with these arguments. If ``'DEFAULT'``
 is specified for forget, or if there are no arguments specified,
 the ``--keep-daily 7 --keep-weekly 5 --keep-monthly 12`` is used.
+The ``forget`` command is run *without* the ``--host`` option,
+so the policy applies to all snapshots in the repository.
+Specify it explicitly if this is not intended.
 
 If ``prune`` is specified, a ``restic prune`` is run following
 the ``forget``, with the specified arguments (if any). Note that

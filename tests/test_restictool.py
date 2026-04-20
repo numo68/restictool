@@ -203,8 +203,6 @@ localdirs:
                 "--insecure-tls",
                 "--keep-daily",
                 "7",
-                "--host",
-                "myhost",
                 "--my-arg1",
                 "--my-arg2",
             ],

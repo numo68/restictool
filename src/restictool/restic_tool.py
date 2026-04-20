@@ -685,7 +685,7 @@ formatters:
                 self.configuration.get_options(volume, localdir_name, forget, prune)
             )
 
-            if not prune:
+            if not forget and not prune:
                 options.extend(["--host", self.configuration.hostname])
 
         elif self.settings.subcommand == SubCommand.RESTORE:
